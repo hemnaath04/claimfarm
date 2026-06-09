@@ -32,6 +32,9 @@ Thumbs.db
 # Data / artifacts (committed via .gitkeep where structure matters)
 data/photos/
 data/pdfs/
+data/eval/*.jpg
+data/eval/*.jpeg
+data/eval/*.png
 data/eval/raw/
 *.sqlite
 *.sqlite-journal
