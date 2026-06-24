@@ -18,9 +18,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from app.agents.claim_drafter import build_claim, render_claim_pdf
+from app.agents.claim_drafter import (
+    build_claim,
+    render_claim_pdf,
+    upload_claim_pdf_to_oss,
+)
 from app.agents.damage_assessor import assess_damage
 from app.agents.weather_corroborator import corroborate
+from app.config import get_settings
 from app.models.claim import Farmer
 from app.storage import claims_repo
 
@@ -77,6 +82,17 @@ def main() -> int:
 
     print(f"Rendering PDF for {claim.claim_id}...")
     pdf_path = render_claim_pdf(claim, f"data/pdfs/{claim.claim_id}.pdf")
+
+    # Mirror to Alibaba OSS when credentials are configured, so the deployed
+    # backend can serve a permanent URL instead of an ephemeral local path.
+    settings = get_settings()
+    if settings.alibaba_access_key_id and settings.alibaba_access_key_secret:
+        try:
+            oss_url = upload_claim_pdf_to_oss(claim, pdf_path)
+            print(f"Uploaded to OSS -> {oss_url}")
+        except Exception as exc:  # noqa: BLE001
+            print(f"OSS upload failed (continuing with local PDF): {exc}")
+
     claims_repo.save(claim, pdf_path=str(pdf_path))
     print(f"Saved {claim.claim_id} (loss ${claim.estimated_loss_usd:.2f}) to DB.")
     return 0
