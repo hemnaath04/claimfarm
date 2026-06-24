@@ -1,0 +1,31 @@
+.git
+.venv
+__pycache__
+*.py[oc]
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Local artifacts
+.chroma
+data/photos
+data/pdfs
+data/eval/*.jpg
+data/eval/*.jpeg
+data/eval/*.png
+*.sqlite
+*.sqlite-journal
+
+# Editor / OS
+.DS_Store
+.vscode
+.idea
+
+# Sensitive
+.env
+.env.local
+
+# Docs / dev-only
+docs
+tests
+.streamlit
