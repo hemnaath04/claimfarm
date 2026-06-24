@@ -162,17 +162,44 @@ class DashVectorStore(VectorStore):
     def _coll(self, name: str):
         return self._client.get(name)  # assumes collection pre-created in console
 
+    @staticmethod
+    def _check(res, op: str) -> None:
+        code = getattr(res, "code", None)
+        if code not in (0, None):
+            raise RuntimeError(
+                f"DashVector {op} failed: code={code} message={getattr(res, 'message', '')}"
+            )
+
+    @staticmethod
+    def _stringify_fields(meta: dict[str, Any]) -> dict[str, Any]:
+        """DashVector fields accept scalars; serialize complex values."""
+        out: dict[str, Any] = {}
+        for k, v in meta.items():
+            if isinstance(v, (str, int, float, bool)) or v is None:
+                out[k] = v
+            else:
+                out[k] = json.dumps(v)
+        return out
+
     def upsert(self, collection: str, docs: list[VectorDoc]) -> None:
         if not docs:
             return
+        from dashvector import Doc  # type: ignore
+
         vectors = embed([d.text for d in docs])
         coll = self._coll(collection)
-        coll.upsert(
-            [
-                {"id": d.id, "vector": v, "fields": {**d.metadata, "text": d.text}}
-                for d, v in zip(docs, vectors)
-            ]
-        )
+        items = [
+            Doc(
+                id=d.id,
+                vector=v,
+                fields=self._stringify_fields({**d.metadata, "text": d.text}),
+            )
+            for d, v in zip(docs, vectors)
+        ]
+        # DashVector caps batches at 100; chunk for safety.
+        for i in range(0, len(items), 100):
+            res = coll.upsert(items[i : i + 100])
+            self._check(res, "upsert")
 
     def query(
         self,
@@ -186,18 +213,23 @@ class DashVectorStore(VectorStore):
         q_vec = embed([text])[0]
         filter_str = None
         if where:
-            filter_str = " AND ".join(f"{k_}='{v_}'" for k_, v_ in where.items())
-        res = coll.query(vector=q_vec, topk=k, filter=filter_str, output_fields=["*"])
+            filter_str = " and ".join(f"{k_}='{v_}'" for k_, v_ in where.items())
+        res = coll.query(
+            vector=q_vec, topk=k, filter=filter_str, output_fields=None
+        )
+        self._check(res, "query")
         hits: list[QueryHit] = []
-        for r in res.output if hasattr(res, "output") else []:
-            fields = dict(r.fields or {})
+        for r in res.output or []:
+            fields = dict(getattr(r, "fields", None) or {})
             text_val = fields.pop("text", "")
             hits.append(
                 QueryHit(
                     id=str(r.id),
-                    score=float(r.score),
+                    # DashVector returns cosine distance (lower = closer);
+                    # convert to similarity for consistency with ChromaStore.
+                    score=1.0 - float(r.score),
                     text=str(text_val),
-                    metadata=fields,
+                    metadata=_deserialize_meta(fields),
                 )
             )
         return hits
@@ -205,7 +237,8 @@ class DashVectorStore(VectorStore):
     def delete(self, collection: str, ids: list[str]) -> None:
         if not ids:
             return
-        self._coll(collection).delete(ids=ids)
+        res = self._coll(collection).delete(ids=ids)
+        self._check(res, "delete")
 
     def count(self, collection: str) -> int:
         coll = self._coll(collection)
