@@ -13,10 +13,48 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from app.agents import fraud_check, past_claim_rag
 from app.agents.multilingual import status_message
 from app.clients import insurer
-from app.models.claim import ClaimStatus
+from app.models.claim import Claim, ClaimStatus
 from app.storage import claims_repo
+
+
+@st.cache_data(show_spinner=False)
+def _cached_similar(claim_id: str, status_key: str) -> list[dict]:
+    claim = claims_repo.get(claim_id)
+    if claim is None:
+        return []
+    hits = past_claim_rag.find_similar(claim, k=3)
+    return [
+        {
+            "id": h.metadata.get("claim_id"),
+            "score": h.score,
+            "status": h.metadata.get("status"),
+            "loss": h.metadata.get("estimated_loss_usd"),
+            "cause": h.metadata.get("damage_cause"),
+            "crop": h.metadata.get("crop_type"),
+            "phone": h.metadata.get("farmer_phone"),
+        }
+        for h in hits
+    ]
+
+
+@st.cache_data(show_spinner=False)
+def _cached_fraud(claim_id: str, status_key: str) -> list[dict]:
+    claim = claims_repo.get(claim_id)
+    if claim is None:
+        return []
+    flags = fraud_check.check(claim)
+    return [
+        {
+            "severity": f.severity,
+            "message": f.message,
+            "related": f.related_claim_id,
+            "similarity": f.similarity,
+        }
+        for f in flags
+    ]
 
 st.set_page_config(
     page_title="ClaimFarm Adjuster",
@@ -228,6 +266,37 @@ with detail_col:
                 data=fh.read(),
                 file_name=Path(row.pdf_path).name,
                 mime="application/pdf",
+            )
+
+    st.divider()
+    st.markdown("**Similar past claims** _(RAG over DashVector/Chroma)_")
+    similar = _cached_similar(claim.claim_id, claim.status.value)
+    if not similar:
+        st.caption("No comparable claims yet — this one is the baseline.")
+    else:
+        for s in similar:
+            st.markdown(
+                f"""
+                <div class="cf-card">
+                  <div class="cf-id">{s["id"]}</div>
+                  <div style="margin-top: 4px;">
+                    {s["crop"]} / {s["cause"]} &middot; loss ${s["loss"]:,.0f}
+                    &middot; {_status_pill(s["status"])} &middot; sim {s["score"]:.2f}
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    flags = _cached_fraud(claim.claim_id, claim.status.value)
+    if flags:
+        st.markdown("**Risk flags**")
+        for f in flags:
+            color = "#F26C6C" if f["severity"] == "block" else "#F2C463"
+            st.markdown(
+                f"<div class='cf-evidence' style='border-left-color: {color}'>"
+                f"<strong>{f['severity'].upper()}</strong> — {f['message']}</div>",
+                unsafe_allow_html=True,
             )
 
     st.divider()

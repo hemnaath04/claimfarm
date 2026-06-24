@@ -43,3 +43,6 @@ data/eval/raw/
 # Logs
 *.log
 logs/
+
+# Vector store (local Chroma)
+.chroma/

@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     oss_bucket: str = "claimfarm-files"
     oss_endpoint: str = "https://oss-ap-southeast-1.aliyuncs.com"
 
+    vector_store: str = "chroma"  # "chroma" or "dashvector"
+    chroma_path: str = "./.chroma"
+
     dashvector_api_key: str = ""
     dashvector_endpoint: str = ""
     dashvector_cluster: str = ""

@@ -1,11 +1,19 @@
-"""CRUD repository for Claim objects backed by SQLite."""
+"""CRUD repository for Claim objects backed by SQLite.
+
+`save()` also indexes the claim into the past_claims vector collection so
+the RAG retrieval layer stays in sync with the relational store.
+"""
 
 from __future__ import annotations
+
+import logging
 
 from sqlmodel import Session, select
 
 from app.models.claim import Claim, ClaimStatus
 from app.storage.db import ClaimRow, get_engine
+
+logger = logging.getLogger(__name__)
 
 
 def _to_row(claim: Claim) -> ClaimRow:
@@ -27,7 +35,7 @@ def _from_row(row: ClaimRow) -> Claim:
     return claim
 
 
-def save(claim: Claim, *, pdf_path: str | None = None) -> None:
+def save(claim: Claim, *, pdf_path: str | None = None, index: bool = True) -> None:
     row = _to_row(claim)
     if pdf_path:
         row.pdf_path = pdf_path
@@ -43,6 +51,14 @@ def save(claim: Claim, *, pdf_path: str | None = None) -> None:
         else:
             session.add(row)
         session.commit()
+
+    if index:
+        try:
+            from app.agents.past_claim_rag import index_claim
+
+            index_claim(claim)
+        except Exception as exc:  # noqa: BLE001 — RAG failure must never block a save
+            logger.warning("vector index failed for %s: %s", claim.claim_id, exc)
 
 
 def get(claim_id: str) -> Claim | None:
