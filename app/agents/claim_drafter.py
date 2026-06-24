@@ -26,6 +26,14 @@ from app.models.claim import Claim, Farmer  # noqa: E402
 from app.models.damage import DamageAssessment  # noqa: E402
 from app.models.weather import CorroborationResult, WeatherSummary  # noqa: E402
 
+
+def upload_claim_pdf_to_oss(claim: Claim, pdf_path: str | Path) -> str:
+    """Upload a rendered claim PDF to Alibaba OSS. Returns the OSS object URL."""
+    from app.clients import alibaba_oss  # local import; OSS creds may be absent in dev
+
+    key = f"claims/{claim.claim_id}.pdf"
+    return alibaba_oss.upload_file(key, pdf_path)
+
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
 
 _env = Environment(
