@@ -89,3 +89,30 @@ async def bird_inbound(request: Request, background: BackgroundTasks) -> dict:
         )
 
     return {"status": "received"}
+
+
+@app.post("/telegram/inbound")
+async def telegram_inbound(request: Request, background: BackgroundTasks) -> dict:
+    """Telegram Bot webhook. JSON `Update` payload per Telegram Bot API.
+
+    Reliably works on the free tier — no media-access gymnastics,
+    no template requirements, no 24-hour window.
+    """
+    try:
+        update = await request.json()
+    except Exception:
+        update = {}
+
+    parsed = whatsapp_intake.parse_telegram_update(update)
+    if parsed:
+        background.add_task(
+            whatsapp_intake.process_inbound_telegram,
+            chat_id=parsed["chat_id"],
+            user_name=parsed.get("user_name", ""),
+            body=parsed.get("body", ""),
+            photo_file_id=parsed.get("photo_file_id"),
+            mime=parsed.get("mime"),
+        )
+
+    # Telegram only cares about a 200 ack
+    return {"ok": True}

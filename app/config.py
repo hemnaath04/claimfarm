@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     bird_sandbox_from: str = ""
     bird_base_url: str = "https://api.bird.com"
 
+    telegram_bot_token: str = ""
+    telegram_api_base: str = "https://api.telegram.org"
+
     open_meteo_base: str = "https://archive-api.open-meteo.com/v1/archive"
 
     database_url: str = "sqlite:///./claimfarm.sqlite"

@@ -15,7 +15,7 @@ from app.agents.claim_drafter import build_claim, render_claim_pdf
 from app.agents.damage_assessor import assess_damage
 from app.agents.multilingual import detect_language, status_message
 from app.agents.weather_corroborator import corroborate
-from app.clients import bird_client, twilio_client
+from app.clients import bird_client, telegram_client, twilio_client
 from app.models.claim import ClaimStatus, Farmer
 from app.storage import claims_repo
 
@@ -277,4 +277,130 @@ def process_inbound_bird(
         bird_client.send_whatsapp(from_phone, reply)
     except Exception:
         logger.exception("bird send_whatsapp (reply) failed")
+    return IntakeResult(claim_id=claim.claim_id, status="processed")
+
+
+# ---------------------------------------------------------------------------
+# Telegram variant
+# ---------------------------------------------------------------------------
+
+
+def parse_telegram_update(update: dict) -> dict | None:
+    """Extract (chat_id, body, photo_file_id, mime) from a Telegram webhook update."""
+    msg = update.get("message") or update.get("edited_message")
+    if not msg:
+        return None
+
+    chat_id = (msg.get("chat") or {}).get("id")
+    if chat_id is None:
+        return None
+
+    body = msg.get("caption") or msg.get("text") or ""
+
+    photo_file_id = None
+    mime = None
+    # Telegram's `photo` is an array of progressively larger sizes; pick the largest.
+    photos = msg.get("photo")
+    if isinstance(photos, list) and photos:
+        photo_file_id = photos[-1].get("file_id")
+        mime = "image/jpeg"
+
+    # `document` covers image attachments sent uncompressed
+    if not photo_file_id:
+        doc = msg.get("document")
+        if isinstance(doc, dict):
+            doc_mime = (doc.get("mime_type") or "").lower()
+            if doc_mime.startswith("image/"):
+                photo_file_id = doc.get("file_id")
+                mime = doc_mime
+
+    return {
+        "chat_id": chat_id,
+        "user_name": ((msg.get("from") or {}).get("first_name") or str(chat_id)),
+        "body": body,
+        "photo_file_id": photo_file_id,
+        "mime": mime,
+    }
+
+
+def process_inbound_telegram(
+    *,
+    chat_id: int,
+    user_name: str,
+    body: str,
+    photo_file_id: str | None,
+    mime: str | None,
+) -> IntakeResult:
+    """Same pipeline as the WhatsApp variants, but via Telegram Bot API."""
+    if not photo_file_id:
+        try:
+            telegram_client.send_message(
+                chat_id,
+                "Hi! Send a photo of your damaged crop (with a short caption "
+                "describing what happened) and I'll file an insurance claim "
+                "for you.",
+            )
+        except Exception:
+            logger.exception("telegram send_message (no-media path) failed")
+        return IntakeResult(claim_id=None, status="awaiting_photo")
+
+    lang, _ = detect_language(body) if body else ("en", 0.0)
+
+    try:
+        photo_bytes, resolved_mime = telegram_client.download_file(photo_file_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("telegram download_file failed")
+        try:
+            telegram_client.send_message(
+                chat_id, "Could not download that photo. Please send it again."
+            )
+        except Exception:
+            logger.exception("telegram send_message (media-fail path) failed")
+        return IntakeResult(claim_id=None, status="media_download_failed", detail=str(exc))
+
+    image_mime = mime or resolved_mime or "image/jpeg"
+    image_data_url = (
+        "data:" + image_mime + ";base64," + base64.b64encode(photo_bytes).decode("ascii")
+    )
+
+    damage = assess_damage(image_data_url)
+    weather, corr = corroborate(
+        damage,
+        latitude=DEFAULT_LATITUDE,
+        longitude=DEFAULT_LONGITUDE,
+        claim_date=date.today(),
+    )
+
+    farmer = Farmer(
+        name=user_name or f"tg-{chat_id}",
+        phone=f"telegram:{chat_id}",
+        language=lang,
+        latitude=DEFAULT_LATITUDE,
+        longitude=DEFAULT_LONGITUDE,
+        region=DEFAULT_REGION,
+        farm_area_hectares=DEFAULT_FARM_AREA_HA,
+    )
+
+    claim = build_claim(
+        farmer=farmer,
+        damage=damage,
+        weather=weather,
+        corroboration=corr,
+        date_of_damage=date.today(),
+        farmer_narrative=body or "",
+    )
+
+    try:
+        pdf_path = render_claim_pdf(claim, f"data/pdfs/{claim.claim_id}.pdf")
+        claims_repo.save(claim, pdf_path=str(pdf_path))
+    except Exception:
+        logger.exception("claim persistence failed (telegram path)")
+        claims_repo.save(claim)
+
+    claim.status = ClaimStatus.pending_review
+    reply = status_message(claim, target_language=lang)
+    try:
+        telegram_client.send_message(chat_id, reply)
+    except Exception:
+        logger.exception("telegram send_message (reply) failed")
     return IntakeResult(claim_id=claim.claim_id, status="processed")
