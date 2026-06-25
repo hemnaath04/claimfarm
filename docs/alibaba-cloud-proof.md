@@ -31,12 +31,27 @@ The runtime reads Alibaba credentials from environment variables defined in
 
 The live deployment is documented below.
 
-- **Function Compute URL**: _added after deploy_
-- **OSS bucket**: `claimfarm-files` (region `ap-southeast-1`)
-- **DashVector collections**: `past_claims`, `agronomy_kb`
-- **Console screenshots** (in `docs/screenshots/`):
-  - `fc-function-overview.png` — FC dashboard
-  - `oss-bucket.png` — OSS bucket with uploaded objects
-  - `dashvector-collections.png` — DashVector with indexed claims
+- **Function Compute URL** (live): https://claimfarm-api-wovsxktpbk.ap-southeast-1.fcapp.run
+  - `GET /healthz` → `{"status":"ok"}` (HTTP 200)
+  - `GET /docs` → Swagger UI for the FastAPI app
+  - `GET /openapi.json` → machine-readable API spec
+- **OSS bucket**: `claimfarm-files` (region `ap-southeast-1`); test object at
+  `oss://claimfarm-files/tests/smoke.txt` is publicly readable.
+- **DashVector cluster**: `claimfarm` at
+  `vrs-sg-b0q4uc3th0001u.dashvector.ap-southeast-1.aliyuncs.com`, two
+  collections live: `agronomy_kb` (15 docs, 1024-dim cosine) and
+  `past_claims` (auto-indexed on every save).
+- **Container Registry**: Alibaba Container Registry EE instance
+  `claimfarm-acr` mirrors the same image at
+  `claimfarm-acr-registry.ap-southeast-1.cr.aliyuncs.com/claimfarm-hb/claimfarm`.
+  Image is also published to `ghcr.io/hemnaath04/claimfarm:latest` for
+  FC's "Use Custom Repository Image" runtime path.
 - **Live-call screen recording**: linked from the Devpost submission's
   "Proof of Alibaba Cloud Deployment" field.
+
+Verification command:
+
+```bash
+curl -sS https://claimfarm-api-wovsxktpbk.ap-southeast-1.fcapp.run/healthz
+# → {"status":"ok"}
+```

@@ -9,6 +9,8 @@
 
 Submitted to the **Global AI Hackathon Series with Qwen Cloud** — Track 4: Autopilot Agent.
 
+**Live backend:** https://claimfarm-api-wovsxktpbk.ap-southeast-1.fcapp.run (Function Compute 3.0, Singapore region) · `/healthz` · `/docs`
+
 ## Why
 
 ~500 million smallholder farmers globally lose crops to weather and pests every year. Less than 20% of those eligible ever file an insurance claim, because the forms are in the wrong language, demand structured evidence they cannot easily produce, and assume domain literacy. ClaimFarm collapses that workflow to one photo.
