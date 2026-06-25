@@ -99,7 +99,7 @@ cp .env.example .env
 uv run uvicorn app.main:app --reload
 
 # 5. run adjuster dashboard
-uv run streamlit run dashboard/app.py
+uv run streamlit run dashboard/main.py
 
 # 6. run mock insurer (separate terminal)
 uv run uvicorn mock_insurer.main:app --port 8001 --reload

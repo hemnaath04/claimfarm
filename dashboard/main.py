@@ -1,7 +1,7 @@
 """Adjuster review dashboard for ClaimFarm.
 
 Run:
-    uv run streamlit run dashboard/app.py
+    uv run streamlit run dashboard/main.py
 """
 
 from __future__ import annotations

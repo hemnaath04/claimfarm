@@ -34,7 +34,7 @@
    uv run uvicorn mock_insurer.main:app --port 8001 --reload
 
    # T2 — Streamlit dashboard
-   uv run streamlit run dashboard/app.py
+   uv run streamlit run dashboard/main.py
 
    # T3 — keep open for live curl to FC
    ```
