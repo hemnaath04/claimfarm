@@ -31,7 +31,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.14 /uv /uvx /usr/local/bin/
 WORKDIR /app
 
 # Cache deps layer
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock LICENSE README.md ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 # Copy app code
@@ -40,8 +40,9 @@ COPY mock_insurer mock_insurer
 COPY dashboard dashboard
 COPY scripts scripts
 
-# SQLite + Chroma can write to /tmp on Function Compute
-ENV DATABASE_URL=sqlite:////tmp/claimfarm.sqlite \
+# Put the venv's executables first so we can call uvicorn directly
+ENV PATH="/app/.venv/bin:${PATH}" \
+    DATABASE_URL=sqlite:////tmp/claimfarm.sqlite \
     CHROMA_PATH=/tmp/.chroma \
     PUBLIC_BASE_URL=http://localhost:9000
 
@@ -50,4 +51,7 @@ EXPOSE 9000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s \
     CMD curl -fsS http://localhost:${LISTEN_PORT}/healthz || exit 1
 
-CMD ["sh", "-c", "uv run uvicorn app.main:app --host 0.0.0.0 --port ${LISTEN_PORT}"]
+# Call uvicorn directly — bypasses `uv run`'s implicit re-sync (which was failing
+# because the project metadata's license = LICENSE reference triggered an
+# editable install at startup).
+CMD ["/bin/sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${LISTEN_PORT:-9000}"]
