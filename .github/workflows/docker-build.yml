@@ -1,4 +1,4 @@
-name: Build and push to Alibaba ACR
+name: Build and push container image
 
 on:
   push:
@@ -11,14 +11,16 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: claimfarm-acr-registry.ap-southeast-1.cr.aliyuncs.com
-  IMAGE: claimfarm-hb/claimfarm
+  ACR_REGISTRY: claimfarm-acr-registry.ap-southeast-1.cr.aliyuncs.com
+  ACR_IMAGE: claimfarm-hb/claimfarm
+  GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/claimfarm
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: write   # required to push to ghcr.io
 
     steps:
       - name: Checkout
@@ -30,11 +32,18 @@ jobs:
       - name: Log in to Alibaba Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ${{ env.ACR_REGISTRY }}
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Build and push
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push to both registries
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -42,7 +51,9 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.ACR_REGISTRY }}/${{ env.ACR_IMAGE }}:latest
+            ${{ env.ACR_REGISTRY }}/${{ env.ACR_IMAGE }}:${{ github.sha }}
+            ${{ env.GHCR_IMAGE }}:latest
+            ${{ env.GHCR_IMAGE }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
