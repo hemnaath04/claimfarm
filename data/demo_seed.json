@@ -1,0 +1,170 @@
+[
+  {
+    "claim_id": "CF-13270F9C74",
+    "farmer": {
+      "name": "Hemnaath",
+      "phone": "telegram:8235079560",
+      "language": "en",
+      "latitude": 20.5937,
+      "longitude": 78.9629,
+      "region": "via WhatsApp",
+      "farm_area_hectares": 1.0
+    },
+    "crop_type": "maize",
+    "date_of_damage": "2026-06-25",
+    "photo_urls": [],
+    "farmer_narrative": "Field is good",
+    "damage": {
+      "crop_type": "maize",
+      "damage_cause": "unknown",
+      "severity": 0,
+      "affected_area_pct": 0,
+      "confidence": 0.95,
+      "visible_indicators": [
+        "uniform green foliage",
+        "no visible lesions or discoloration",
+        "healthy leaf structure"
+      ],
+      "notes": "Field of healthy maize with no visible signs of damage or stress."
+    },
+    "weather": {
+      "latitude": 20.5937,
+      "longitude": 78.9629,
+      "start_date": "2026-05-27",
+      "end_date": "2026-06-25",
+      "total_precip_mm": 47.9,
+      "max_temp_c": 42.3,
+      "min_temp_c": 25.1,
+      "max_wind_kmh": 33.5,
+      "days_above_35c": 27,
+      "days_with_heavy_rain": 0,
+      "days_with_frost": 0,
+      "consecutive_dry_days": 12
+    },
+    "corroboration": {
+      "corroborated": false,
+      "strength": 0.0,
+      "evidence": "Weather data does not support any specific damage cause, as the field shows no visible signs of stress or damage.",
+      "flags": [
+        "High number of days above 35\u00b0C without visible heat stress",
+        "Consecutive dry days without visible drought stress"
+      ]
+    },
+    "forensics": null,
+    "estimated_loss_usd": 0.0,
+    "status": "pending_review",
+    "created_at": "2026-06-25T05:23:56.374125",
+    "adjuster_notes": ""
+  },
+  {
+    "claim_id": "CF-20D756C906",
+    "farmer": {
+      "name": "Lina Tan",
+      "phone": "+60-12-3456789",
+      "language": "en",
+      "latitude": 12.5,
+      "longitude": 100.5,
+      "region": "Demo region",
+      "farm_area_hectares": 2.5
+    },
+    "crop_type": "wheat",
+    "date_of_damage": "2024-10-01",
+    "photo_urls": [],
+    "farmer_narrative": "My field is dry, the corn never came up.",
+    "damage": {
+      "crop_type": "wheat",
+      "damage_cause": "drought",
+      "severity": 85,
+      "affected_area_pct": 95,
+      "confidence": 0.85,
+      "visible_indicators": [
+        "dry brown stalks",
+        "no green growth",
+        "cracked soil"
+      ],
+      "notes": "Field shows extensive dry, brown wheat stalks indicating severe drought stress with minimal green vegetation remaining."
+    },
+    "weather": {
+      "latitude": 12.5,
+      "longitude": 100.5,
+      "start_date": "2024-09-02",
+      "end_date": "2024-10-01",
+      "total_precip_mm": 111.3,
+      "max_temp_c": 31.1,
+      "min_temp_c": 26.1,
+      "max_wind_kmh": 37.9,
+      "days_above_35c": 0,
+      "days_with_heavy_rain": 0,
+      "days_with_frost": 0,
+      "consecutive_dry_days": 7
+    },
+    "corroboration": {
+      "corroborated": false,
+      "strength": 0.2,
+      "evidence": "The weather summary shows moderate precipitation and no extreme heat, which does not support the visual assessment of drought damage.",
+      "flags": [
+        "total_precip_mm is 111.3 mm, indicating sufficient rainfall",
+        "no days above 35\u00b0C, suggesting no extreme heat stress"
+      ]
+    },
+    "forensics": null,
+    "estimated_loss_usd": 1615.0,
+    "status": "approved",
+    "created_at": "2026-06-25T04:35:45.174011",
+    "adjuster_notes": ""
+  },
+  {
+    "claim_id": "CF-58E65714DA",
+    "farmer": {
+      "name": "Ravi Kumar",
+      "phone": "+91-555-0100",
+      "language": "hi",
+      "latitude": 35.15,
+      "longitude": -89.97,
+      "region": "Demo region",
+      "farm_area_hectares": 2.5
+    },
+    "crop_type": "maize",
+    "date_of_damage": "2007-08-15",
+    "photo_urls": [],
+    "farmer_narrative": "My field is dry, the corn never came up.",
+    "damage": {
+      "crop_type": "maize",
+      "damage_cause": "drought",
+      "severity": 90,
+      "affected_area_pct": 100,
+      "confidence": 0.95,
+      "visible_indicators": [
+        "dry and brown leaves",
+        "stunted growth",
+        "no green foliage"
+      ],
+      "notes": "Field of maize appears completely dried out, consistent with severe drought stress."
+    },
+    "weather": {
+      "latitude": 35.15,
+      "longitude": -89.97,
+      "start_date": "2007-07-17",
+      "end_date": "2007-08-15",
+      "total_precip_mm": 21.1,
+      "max_temp_c": 40.2,
+      "min_temp_c": 18.8,
+      "max_wind_kmh": 19.2,
+      "days_above_35c": 14,
+      "days_with_heavy_rain": 0,
+      "days_with_frost": 0,
+      "consecutive_dry_days": 17
+    },
+    "corroboration": {
+      "corroborated": true,
+      "strength": 0.9,
+      "evidence": "Prolonged dry period and high temperatures support drought damage.",
+      "flags": []
+    },
+    "forensics": null,
+    "estimated_loss_usd": 1800.0,
+    "status": "pending_review",
+    "created_at": "2026-06-25T04:35:29.303587",
+    "adjuster_notes": ""
+  }
+]

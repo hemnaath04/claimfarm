@@ -39,6 +39,7 @@ data/eval/raw/
 *.sqlite
 *.sqlite-journal
 *.db
+# NOTE: data/demo_seed.json IS committed (small, drives FC cold-start seed)
 
 # Logs
 *.log

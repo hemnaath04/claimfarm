@@ -7,11 +7,44 @@ from fastapi import BackgroundTasks, FastAPI, Form, Request, Response
 
 from app import api_claims
 from app.agents import whatsapp_intake
+from app.models.claim import Claim
+from app.storage import claims_repo
 from mock_insurer.main import app as mock_insurer_app
 
 logger = logging.getLogger(__name__)
 
+DEMO_SEED_PATH = Path(__file__).resolve().parent.parent / "data" / "demo_seed.json"
+
+
+def _seed_demo_claims_if_empty() -> None:
+    """Populate the ephemeral SQLite with a few canned claims on cold start.
+
+    FC writes SQLite to /tmp which is wiped between container instances, so
+    without this seed every fresh deploy shows an empty queue. Seeds are
+    only inserted if no claims exist — local dev data is untouched.
+    """
+    try:
+        existing = claims_repo.list_by_status()
+        if existing:
+            return
+        if not DEMO_SEED_PATH.exists():
+            logger.info("no demo seed file at %s; skipping", DEMO_SEED_PATH)
+            return
+        payload = json.loads(DEMO_SEED_PATH.read_text())
+        for c in payload:
+            claim = Claim.model_validate(c)
+            claims_repo.save(claim)
+        logger.info("seeded %d demo claims", len(payload))
+    except Exception:  # noqa: BLE001
+        logger.exception("demo seed failed (continuing anyway)")
+
+
 app = FastAPI(title="ClaimFarm", version="0.1.0")
+
+
+@app.on_event("startup")
+def _on_startup() -> None:
+    _seed_demo_claims_if_empty()
 
 # Mount the mock InsurerCo as a sub-app under /insurer so adjusters can
 # approve claims without a second uvicorn running. In production this

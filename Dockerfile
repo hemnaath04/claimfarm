@@ -39,6 +39,7 @@ COPY app app
 COPY mock_insurer mock_insurer
 COPY dashboard dashboard
 COPY scripts scripts
+COPY data data
 
 # Put the venv's executables first so we can call uvicorn directly
 ENV PATH="/app/.venv/bin:${PATH}" \
