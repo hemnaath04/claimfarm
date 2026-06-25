@@ -188,3 +188,18 @@ def install_api(app) -> None:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def _no_cache_api(request, call_next):
+        """Stop Cloudflare's quick-tunnel edge cache from serving stale API JSON.
+
+        The trycloudflare.com tunnel caches GET responses by URL by default
+        and uses the same cache key across all clients. Forcing no-store on
+        every /api/* response keeps the Vercel dashboard in lock-step with
+        the latest SQLite state.
+        """
+        response = await call_next(request)
+        if request.url.path.startswith("/api"):
+            response.headers["Cache-Control"] = "no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+        return response
