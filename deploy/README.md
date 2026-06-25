@@ -32,15 +32,29 @@ to that port automatically. Required env vars (set in FC console):
 - `DASHVECTOR_API_KEY` / `DASHVECTOR_ENDPOINT` — DashVector cluster
 - `VECTOR_STORE=dashvector` — switch off local Chroma
 
-## Build + push (manual)
+## Build + push (CI)
+
+Every push to `main` triggers `.github/workflows/docker-build.yml`, which builds
+the image with Docker Buildx and pushes it to ACR EE at
+`claimfarm-acr-registry.ap-southeast-1.cr.aliyuncs.com/claimfarm-hb/claimfarm`.
+
+Required GitHub Actions secrets (Repo Settings → Secrets and variables → Actions):
+
+- `ACR_USERNAME` — the Alibaba Cloud login email shown on the ACR EE
+  Access Credential page (or a RAM user with `cr:Push` permission)
+- `ACR_PASSWORD` — the password set on the same page
+
+The workflow also accepts `workflow_dispatch`, so you can trigger a build
+from the GitHub Actions tab without pushing.
+
+## Build + push (manual fallback)
+
+If you have Docker locally:
 
 ```bash
-# Login to ACR (replace region + namespace as configured in console)
-docker login --username=<acr-user> registry.ap-southeast-1.aliyuncs.com
-
-# Build for linux/amd64 (FC runs amd64)
+docker login --username=<email> claimfarm-acr-registry.ap-southeast-1.cr.aliyuncs.com
 docker buildx build --platform linux/amd64 \
-  -t registry.ap-southeast-1.aliyuncs.com/<namespace>/claimfarm:latest \
+  -t claimfarm-acr-registry.ap-southeast-1.cr.aliyuncs.com/claimfarm-hb/claimfarm:latest \
   --push .
 ```
 
