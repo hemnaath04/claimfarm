@@ -1,0 +1,35 @@
+# Copy these into the Alibaba Function Compute 3.0 console
+# (Function detail page -> Configurations -> Environment Variables -> Edit).
+# Each line is KEY=VALUE; replace the right-hand side with the live secret
+# from ~/projects/claimfarm/.env. Do NOT commit a populated copy.
+
+# Qwen Cloud
+QWEN_API_KEY=
+QWEN_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+QWEN_VL_MODEL=qwen-vl-max
+QWEN_CHAT_MODEL=qwen-max
+QWEN_EMBED_MODEL=text-embedding-v3
+
+# Alibaba Cloud
+ALIBABA_ACCESS_KEY_ID=
+ALIBABA_ACCESS_KEY_SECRET=
+ALIBABA_REGION=ap-southeast-1
+
+# OSS
+OSS_BUCKET=claimfarm-files
+OSS_ENDPOINT=https://oss-ap-southeast-1.aliyuncs.com
+
+# DashVector
+VECTOR_STORE=dashvector
+DASHVECTOR_API_KEY=
+DASHVECTOR_ENDPOINT=vrs-sg-b0q4uc3th0001u.dashvector.ap-southeast-1.aliyuncs.com
+DASHVECTOR_CLUSTER=claimfarm
+
+# Open-Meteo (no key needed)
+OPEN_METEO_BASE=https://archive-api.open-meteo.com/v1/archive
+
+# FastAPI / app
+DATABASE_URL=sqlite:////tmp/claimfarm.sqlite
+PUBLIC_BASE_URL=
+LOG_LEVEL=INFO
+LISTEN_PORT=9000
