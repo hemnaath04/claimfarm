@@ -60,7 +60,7 @@ export default function FaqPage() {
         </h1>
 
         <div className="mt-10">
-          <Accordion type="single" collapsible className="space-y-3">
+          <Accordion className="space-y-3">
             {FAQS.map((f, i) => (
               <AccordionItem
                 key={i}
