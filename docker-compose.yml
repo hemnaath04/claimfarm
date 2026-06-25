@@ -1,0 +1,63 @@
+version: "3.9"
+
+# ClaimFarm — full-stack local development.
+# `docker compose up` starts the FastAPI backend, the Next.js dashboard,
+# and a Chroma-only fallback so devs without a DashVector key can run
+# the RAG layer locally.
+#
+# Required env: copy .env.example → .env at the repo root and fill in
+# QWEN_API_KEY (everything else has sane defaults).
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      LISTEN_PORT: "8000"
+      DATABASE_URL: "sqlite:////app/data/claimfarm.sqlite"
+      CHROMA_PATH: "/app/data/.chroma"
+      VECTOR_STORE: "chroma"
+      PUBLIC_BASE_URL: "http://localhost:8000"
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist SQLite + Chroma across container restarts for dev convenience
+      - claimfarm_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  web:
+    image: node:20-alpine
+    working_dir: /web
+    command: sh -c "corepack enable && pnpm install --no-frozen-lockfile && pnpm dev --port 3000 --hostname 0.0.0.0"
+    environment:
+      NEXT_PUBLIC_API_URL: "http://api:8000"
+    volumes:
+      - ./web:/web
+      - web_node_modules:/web/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+  # Optional: standalone Chroma server if you want it out-of-process.
+  # Uncomment + flip VECTOR_STORE=chroma_remote in the api service.
+  # chroma:
+  #   image: ghcr.io/chroma-core/chroma:0.5.0
+  #   environment:
+  #     IS_PERSISTENT: TRUE
+  #   ports:
+  #     - "8765:8000"
+  #   volumes:
+  #     - chroma_data:/chroma/chroma
+
+volumes:
+  claimfarm_data:
+  web_node_modules:
+  # chroma_data:

@@ -30,7 +30,9 @@ def average_hash(image_bytes: bytes, size: int = 8) -> int:
     try:
         with Image.open(io.BytesIO(image_bytes)) as img:
             img = img.convert("L").resize((size, size), Image.Resampling.LANCZOS)
-            pixels = list(img.getdata())
+            # Avoid the deprecated Image.getdata(); raw bytes are equivalent
+            # for an 8-bit "L"-mode image.
+            pixels = list(img.tobytes())
     except Exception:
         logger.exception("perceptual_hash: image decode failed")
         return 0
