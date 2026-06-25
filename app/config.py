@@ -39,6 +39,25 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_api_base: str = "https://api.telegram.org"
 
+    # Identity verification (KYC + liveness)
+    identity_provider: str = "mock"  # mock | stripe_identity | persona | veriff | onfido
+    persona_api_key: str = ""
+    veriff_api_key: str = ""
+    onfido_api_key: str = ""
+
+    # Stripe payments
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_growth_price_id: str = ""
+
+    # Email / SMS / push transports (logged when unset)
+    resend_api_key: str = ""
+    sendgrid_api_key: str = ""
+    twilio_sms_from: str = ""
+
+    # Rate limiting
+    rate_limit_per_minute: int = 60
+
     open_meteo_base: str = "https://archive-api.open-meteo.com/v1/archive"
 
     database_url: str = "sqlite:///./claimfarm.sqlite"

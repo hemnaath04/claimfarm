@@ -5,8 +5,11 @@ from pathlib import Path
 
 from fastapi import BackgroundTasks, FastAPI, Form, Request, Response
 
-from app import api_claims
+from app import api_admin, api_billing, api_claims, api_identity
 from app.agents import whatsapp_intake
+from app.auth.routes import router as auth_router
+from app.config import get_settings
+from app.middlewares import IPRateLimiter, SecurityHeaders
 from app.models.claim import Claim
 from app.storage import claims_repo
 from mock_insurer.main import app as mock_insurer_app
@@ -53,6 +56,16 @@ app.mount("/insurer", mock_insurer_app)
 
 # Adjuster JSON API consumed by the Next.js dashboard (web/).
 api_claims.install_api(app)
+
+# Auth + identity + billing + admin sub-APIs.
+app.include_router(auth_router)
+app.include_router(api_identity.router)
+app.include_router(api_billing.router)
+app.include_router(api_admin.router)
+
+# Cross-cutting middleware (registration order matters — last wraps first).
+app.add_middleware(SecurityHeaders)
+app.add_middleware(IPRateLimiter, rate=get_settings().rate_limit_per_minute)
 
 # Bird payload logs land in /tmp so we can inspect them after the first call
 BIRD_LOG = Path("/tmp/claimfarm_bird_payloads.jsonl")
