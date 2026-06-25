@@ -363,20 +363,29 @@ def process_inbound_telegram(
         "data:" + image_mime + ";base64," + base64.b64encode(photo_bytes).decode("ascii")
     )
 
+    # Run damage + forensics. Forensics gives us EXIF-derived GPS and capture
+    # time that we prefer over the hardcoded demo defaults when present.
+    from app.agents import photo_forensics  # local import to keep startup light
+
     damage = assess_damage(image_data_url)
-    weather, corr = corroborate(
-        damage,
-        latitude=DEFAULT_LATITUDE,
-        longitude=DEFAULT_LONGITUDE,
-        claim_date=date.today(),
+    forensics = photo_forensics.analyze(photo_bytes, image_data_url)
+
+    lat = forensics.gps_lat if forensics.gps_lat is not None else DEFAULT_LATITUDE
+    lon = forensics.gps_lon if forensics.gps_lon is not None else DEFAULT_LONGITUDE
+    claim_date = (
+        forensics.capture_time.date()
+        if forensics.capture_time is not None
+        else date.today()
     )
+
+    weather, corr = corroborate(damage, latitude=lat, longitude=lon, claim_date=claim_date)
 
     farmer = Farmer(
         name=user_name or f"tg-{chat_id}",
         phone=f"telegram:{chat_id}",
         language=lang,
-        latitude=DEFAULT_LATITUDE,
-        longitude=DEFAULT_LONGITUDE,
+        latitude=lat,
+        longitude=lon,
         region=DEFAULT_REGION,
         farm_area_hectares=DEFAULT_FARM_AREA_HA,
     )
@@ -386,8 +395,9 @@ def process_inbound_telegram(
         damage=damage,
         weather=weather,
         corroboration=corr,
-        date_of_damage=date.today(),
+        date_of_damage=claim_date,
         farmer_narrative=body or "",
+        forensics=forensics,
     )
 
     try:

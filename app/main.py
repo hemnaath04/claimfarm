@@ -6,10 +6,16 @@ from pathlib import Path
 from fastapi import BackgroundTasks, FastAPI, Form, Request, Response
 
 from app.agents import whatsapp_intake
+from mock_insurer.main import app as mock_insurer_app
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ClaimFarm", version="0.1.0")
+
+# Mount the mock InsurerCo as a sub-app under /insurer so adjusters can
+# approve claims without a second uvicorn running. In production this
+# would be replaced by INSURER_BASE_URL pointing at a real carrier.
+app.mount("/insurer", mock_insurer_app)
 
 # Bird payload logs land in /tmp so we can inspect them after the first call
 BIRD_LOG = Path("/tmp/claimfarm_bird_payloads.jsonl")

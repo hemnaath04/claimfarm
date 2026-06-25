@@ -65,6 +65,7 @@ def build_claim(
     date_of_damage: date,
     farmer_narrative: str = "",
     photo_urls: list[str] | None = None,
+    forensics=None,  # PhotoForensics | None — kept loose to avoid an import cycle
     typical_yield_usd_per_hectare: float = 800.0,
 ) -> Claim:
     """Assemble a Claim object with a simple loss estimate.
@@ -87,5 +88,6 @@ def build_claim(
         damage=damage,
         weather=weather,
         corroboration=corroboration,
+        forensics=forensics,
         estimated_loss_usd=round(loss, 2),
     )

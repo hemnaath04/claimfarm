@@ -259,6 +259,48 @@ with detail_col:
         for f in corr.flags:
             st.markdown(f"- :red[{f}]")
 
+    if claim.forensics:
+        f = claim.forensics
+        st.markdown("**Photo forensics** _(EXIF + Qwen-VL authenticity)_")
+        cf1, cf2, cf3, cf4 = st.columns(4)
+        cf1.metric(
+            "Authenticity",
+            f"{int(f.authenticity_score * 100)}%",
+            delta="real phone photo" if f.appears_real_phone_photo else "looks synthetic",
+            delta_color="normal" if f.appears_real_phone_photo else "inverse",
+        )
+        cf2.metric(
+            "EXIF present",
+            "yes" if f.has_exif else "no",
+            delta=None if f.has_exif else "stripped",
+            delta_color="inverse" if not f.has_exif else "normal",
+        )
+        cf3.metric(
+            "GPS in EXIF",
+            "yes" if f.gps_lat is not None else "no",
+            delta=f"{f.gps_lat:.4f}, {f.gps_lon:.4f}" if f.gps_lat is not None else "no GPS",
+            delta_color="normal" if f.gps_lat is not None else "inverse",
+        )
+        cf4.metric(
+            "Capture time",
+            f.capture_time.strftime("%Y-%m-%d") if f.capture_time else "unknown",
+            delta=f.capture_time.strftime("%H:%M") if f.capture_time else "no timestamp",
+            delta_color="normal" if f.capture_time else "inverse",
+        )
+        if f.camera_make or f.camera_model:
+            st.caption(
+                f"Camera: {f.camera_make or '—'} {f.camera_model or ''}"
+                f"{' · software: ' + f.software if f.software else ''}"
+            )
+        st.markdown(
+            f"<div class='cf-evidence'>{f.authenticity_reasoning or 'no notes'}</div>",
+            unsafe_allow_html=True,
+        )
+        if f.flags:
+            st.markdown("**Forensic flags**")
+            for tag in f.flags:
+                st.markdown(f"- :orange[{tag}]")
+
     if row.pdf_path and Path(row.pdf_path).exists():
         with open(row.pdf_path, "rb") as fh:
             st.download_button(
@@ -307,7 +349,11 @@ with detail_col:
     def _send_to_insurer(decision: ClaimStatus) -> None:
         claims_repo.update_status(claim.claim_id, decision, adjuster_notes=notes)
         if decision is ClaimStatus.approved:
-            record = insurer.submit(claim)
+            try:
+                record = insurer.submit(claim)
+            except Exception as exc:  # noqa: BLE001
+                st.error(f"Insurer call failed: {exc}")
+                return
             claims_repo.update_status(
                 claim.claim_id,
                 ClaimStatus.submitted,
@@ -319,13 +365,20 @@ with detail_col:
                 claims_repo.update_status(
                     claim.claim_id, ClaimStatus.approved, adjuster_notes=notes
                 )
+                st.toast(
+                    f"Approved · payout ${record.get('approved_payout_usd', 0):,.2f}",
+                    icon="✓",
+                )
             elif terminal == "rejected":
                 claims_repo.update_status(
                     claim.claim_id, ClaimStatus.rejected, adjuster_notes=notes
                 )
-            st.success(
-                f"Insurer responded {terminal} (id {record['insurer_claim_id']})"
-            )
+                st.toast(f"Insurer rejected: {record.get('reviewer_notes','')}", icon="✕")
+            else:
+                st.toast(
+                    f"Insurer status: {terminal}. {record.get('reviewer_notes','')}",
+                    icon="•",
+                )
 
     if b_approve.button("Approve & submit", type="primary", use_container_width=True):
         _send_to_insurer(ClaimStatus.approved)
@@ -335,12 +388,14 @@ with detail_col:
         claims_repo.update_status(
             claim.claim_id, ClaimStatus.rejected, adjuster_notes=notes
         )
+        st.toast("Claim rejected.", icon="✕")
         st.rerun()
 
     if b_info.button("Request more info", use_container_width=True):
         claims_repo.update_status(
             claim.claim_id, ClaimStatus.pending_review, adjuster_notes=notes
         )
+        st.toast("Marked for follow-up — farmer will be asked for more evidence.", icon="📝")
         st.rerun()
 
     st.divider()

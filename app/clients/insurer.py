@@ -8,7 +8,9 @@ import httpx
 
 from app.models.claim import Claim
 
-INSURER_BASE_URL = os.environ.get("INSURER_BASE_URL", "http://localhost:8001")
+# Default points at the mock_insurer sub-app mounted on the main FastAPI server
+# (see app/main.py). Override with INSURER_BASE_URL for a real downstream carrier.
+INSURER_BASE_URL = os.environ.get("INSURER_BASE_URL", "http://localhost:8000/insurer")
 
 
 def _submission_payload(claim: Claim, pdf_url: str | None = None) -> dict:

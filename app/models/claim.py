@@ -5,6 +5,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 from app.models.damage import DamageAssessment
+from app.models.forensics import PhotoForensics
 from app.models.weather import CorroborationResult, WeatherSummary
 
 
@@ -36,6 +37,7 @@ class Claim(BaseModel):
     damage: DamageAssessment
     weather: WeatherSummary
     corroboration: CorroborationResult
+    forensics: PhotoForensics | None = None
     estimated_loss_usd: float = Field(ge=0.0)
     status: ClaimStatus = ClaimStatus.pending_review
     created_at: datetime = Field(default_factory=datetime.utcnow)
