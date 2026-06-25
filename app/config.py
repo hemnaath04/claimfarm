@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     twilio_auth_token: str = ""
     twilio_whatsapp_from: str = "whatsapp:+14155238886"
 
+    bird_api_key: str = ""
+    bird_workspace_id: str = ""
+    bird_channel_id: str = ""
+    bird_sandbox_from: str = ""
+    bird_base_url: str = "https://api.bird.com"
+
     open_meteo_base: str = "https://archive-api.open-meteo.com/v1/archive"
 
     database_url: str = "sqlite:///./claimfarm.sqlite"

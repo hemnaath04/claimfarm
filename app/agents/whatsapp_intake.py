@@ -9,11 +9,13 @@ import logging
 from dataclasses import dataclass
 from datetime import date
 
+from typing import Any
+
 from app.agents.claim_drafter import build_claim, render_claim_pdf
 from app.agents.damage_assessor import assess_damage
 from app.agents.multilingual import detect_language, status_message
 from app.agents.weather_corroborator import corroborate
-from app.clients import twilio_client
+from app.clients import bird_client, twilio_client
 from app.models.claim import ClaimStatus, Farmer
 from app.storage import claims_repo
 
@@ -104,4 +106,175 @@ def process_inbound(
     claim.status = ClaimStatus.pending_review
     reply = status_message(claim, target_language=lang)
     twilio_client.send_whatsapp(from_phone, reply)
+    return IntakeResult(claim_id=claim.claim_id, status="processed")
+
+
+# ---------------------------------------------------------------------------
+# Bird (MessageBird) variant
+# ---------------------------------------------------------------------------
+
+
+def _first(d: Any, *keys: str) -> Any:
+    """Return the first non-empty value walking nested dict keys."""
+    for k in keys:
+        if isinstance(d, dict) and d.get(k) not in (None, "", [], {}):
+            return d[k]
+    return None
+
+
+def parse_bird_payload(payload: dict) -> dict | None:
+    """Best-effort extraction of (from, body, media_url, media_content_type)
+    from Bird's WhatsApp webhook JSON. Bird's exact schema varies across
+    workspace versions, so we walk a few common shapes.
+    """
+    # Some Bird tenants wrap the actual message under a 'payload' or 'event' key
+    for top in ("payload", "event", "data"):
+        if isinstance(payload, dict) and isinstance(payload.get(top), dict):
+            payload = payload[top]
+            break
+
+    # Sender phone — try several common locations
+    from_phone = (
+        _first(payload, "from", "sender", "msisdn", "phoneNumber")
+        or _first(payload.get("contact") or {}, "phoneNumber", "msisdn")
+        or _first(payload.get("originator") or {}, "phoneNumber", "msisdn")
+    )
+    if isinstance(from_phone, dict):
+        from_phone = (
+            from_phone.get("identifierValue")
+            or from_phone.get("phoneNumber")
+            or from_phone.get("msisdn")
+        )
+
+    body = payload.get("body") if isinstance(payload.get("body"), str) else None
+    if not body:
+        body_obj = payload.get("body") if isinstance(payload.get("body"), dict) else {}
+        body = (
+            (body_obj.get("text") or {}).get("text")
+            if isinstance(body_obj.get("text"), dict)
+            else body_obj.get("text")
+        ) or payload.get("text") or ""
+
+    # Media URL — covers image / attachment / mediaItems shapes
+    media_url = None
+    media_type = None
+    body_obj = payload.get("body") if isinstance(payload.get("body"), dict) else {}
+    for media_key in ("image", "video", "document", "file", "audio"):
+        block = body_obj.get(media_key)
+        if isinstance(block, dict):
+            media_url = (
+                block.get("mediaUrl")
+                or block.get("url")
+                or block.get("href")
+                or block.get("link")
+            )
+            media_type = block.get("mimeType") or block.get("contentType")
+            if media_url:
+                break
+
+    if not media_url:
+        for arr_key in ("attachments", "mediaItems", "media"):
+            arr = payload.get(arr_key)
+            if isinstance(arr, list) and arr:
+                item = arr[0]
+                if isinstance(item, dict):
+                    media_url = (
+                        item.get("url")
+                        or item.get("mediaUrl")
+                        or item.get("href")
+                    )
+                    media_type = item.get("mimeType") or item.get("contentType")
+                    if media_url:
+                        break
+
+    if not from_phone:
+        logger.warning("bird payload: could not find sender phone in %s", list(payload.keys()))
+        return None
+
+    return {
+        "from": str(from_phone),
+        "body": str(body or ""),
+        "media_url": media_url,
+        "media_content_type": media_type,
+    }
+
+
+def process_inbound_bird(
+    *,
+    from_phone: str,
+    body: str,
+    media_url: str | None,
+    media_content_type: str | None,
+) -> IntakeResult:
+    """Same pipeline as `process_inbound`, but replies via Bird's API."""
+    if not media_url:
+        try:
+            bird_client.send_whatsapp(
+                from_phone,
+                "Please send a photo of the damaged crop, along with a short "
+                "description of what happened, and we'll start your claim.",
+            )
+        except Exception:
+            logger.exception("bird send_whatsapp (no-media path) failed")
+        return IntakeResult(claim_id=None, status="awaiting_photo")
+
+    lang, _ = detect_language(body) if body else ("en", 0.0)
+
+    try:
+        photo_bytes = bird_client.download_media(media_url)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("bird media download failed")
+        try:
+            bird_client.send_whatsapp(
+                from_phone,
+                "We could not download the photo. Please try sending it again.",
+            )
+        except Exception:
+            logger.exception("bird send_whatsapp (media-fail path) failed")
+        return IntakeResult(claim_id=None, status="media_download_failed", detail=str(exc))
+
+    mime = media_content_type or "image/jpeg"
+    image_data_url = "data:" + mime + ";base64," + base64.b64encode(photo_bytes).decode("ascii")
+
+    damage = assess_damage(image_data_url)
+    weather, corr = corroborate(
+        damage,
+        latitude=DEFAULT_LATITUDE,
+        longitude=DEFAULT_LONGITUDE,
+        claim_date=date.today(),
+    )
+
+    bare = from_phone.replace("whatsapp:", "").strip()
+    farmer = Farmer(
+        name=bare,
+        phone=bare,
+        language=lang,
+        latitude=DEFAULT_LATITUDE,
+        longitude=DEFAULT_LONGITUDE,
+        region=DEFAULT_REGION,
+        farm_area_hectares=DEFAULT_FARM_AREA_HA,
+    )
+
+    claim = build_claim(
+        farmer=farmer,
+        damage=damage,
+        weather=weather,
+        corroboration=corr,
+        date_of_damage=date.today(),
+        farmer_narrative=body or "",
+    )
+
+    try:
+        pdf_path = render_claim_pdf(claim, f"data/pdfs/{claim.claim_id}.pdf")
+        claims_repo.save(claim, pdf_path=str(pdf_path))
+    except Exception:
+        logger.exception("claim persistence failed (bird path)")
+        claims_repo.save(claim)
+
+    claim.status = ClaimStatus.pending_review
+    reply = status_message(claim, target_language=lang)
+    try:
+        bird_client.send_whatsapp(from_phone, reply)
+    except Exception:
+        logger.exception("bird send_whatsapp (reply) failed")
     return IntakeResult(claim_id=claim.claim_id, status="processed")

@@ -1,12 +1,18 @@
+import json
 import logging
+from datetime import datetime
+from pathlib import Path
 
-from fastapi import BackgroundTasks, FastAPI, Form, Response
+from fastapi import BackgroundTasks, FastAPI, Form, Request, Response
 
 from app.agents import whatsapp_intake
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ClaimFarm", version="0.1.0")
+
+# Bird payload logs land in /tmp so we can inspect them after the first call
+BIRD_LOG = Path("/tmp/claimfarm_bird_payloads.jsonl")
 
 
 @app.get("/healthz")
@@ -46,3 +52,40 @@ def twilio_inbound(
         "</Response>"
     )
     return Response(content=twiml, media_type="application/xml")
+
+
+@app.post("/bird/inbound")
+async def bird_inbound(request: Request, background: BackgroundTasks) -> dict:
+    """Bird (MessageBird) WhatsApp webhook.
+
+    Bird sends JSON (not form-encoded like Twilio). We log the raw
+    payload to /tmp/claimfarm_bird_payloads.jsonl on every call so we
+    can inspect the actual schema once the first message arrives, then
+    dispatch the pipeline against the standard intake.
+    """
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {"raw": (await request.body()).decode("utf-8", errors="replace")}
+
+    try:
+        BIRD_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with BIRD_LOG.open("a") as fh:
+            fh.write(
+                json.dumps({"at": datetime.utcnow().isoformat(), "payload": payload})
+                + "\n"
+            )
+    except Exception:
+        logger.exception("could not write bird payload log")
+
+    parsed = whatsapp_intake.parse_bird_payload(payload)
+    if parsed:
+        background.add_task(
+            whatsapp_intake.process_inbound_bird,
+            from_phone=parsed["from"],
+            body=parsed.get("body", ""),
+            media_url=parsed.get("media_url"),
+            media_content_type=parsed.get("media_content_type"),
+        )
+
+    return {"status": "received"}
