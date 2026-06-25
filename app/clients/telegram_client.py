@@ -25,17 +25,38 @@ def _api(method: str) -> str:
     return f"{s.telegram_api_base.rstrip('/')}/bot{s.telegram_bot_token}/{method}"
 
 
-def send_message(chat_id: int | str, text: str) -> dict:
+def send_message(
+    chat_id: int | str,
+    text: str,
+    *,
+    reply_markup: dict | None = None,
+) -> dict:
     """Send a plain-text message to a Telegram chat."""
-    r = httpx.post(
-        _api("sendMessage"),
-        json={"chat_id": chat_id, "text": text},
-        timeout=15.0,
-    )
+    payload: dict = {"chat_id": chat_id, "text": text}
+    if reply_markup is not None:
+        payload["reply_markup"] = reply_markup
+    r = httpx.post(_api("sendMessage"), json=payload, timeout=15.0)
     if r.status_code >= 400:
         logger.warning("telegram sendMessage failed: %s %s", r.status_code, r.text[:300])
     r.raise_for_status()
     return r.json()
+
+
+def location_request_keyboard(button_text: str = "📍 Share my farm location") -> dict:
+    """A one-tap keyboard that asks Telegram to send the user's location.
+
+    Telegram delivers the location as a regular update with `message.location`
+    populated. After the tap, the keyboard is hidden again.
+    """
+    return {
+        "keyboard": [[{"text": button_text, "request_location": True}]],
+        "resize_keyboard": True,
+        "one_time_keyboard": True,
+    }
+
+
+def remove_keyboard() -> dict:
+    return {"remove_keyboard": True}
 
 
 def set_webhook(url: str) -> dict:

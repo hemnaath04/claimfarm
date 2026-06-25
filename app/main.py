@@ -118,6 +118,8 @@ async def telegram_inbound(request: Request, background: BackgroundTasks) -> dic
             body=parsed.get("body", ""),
             photo_file_id=parsed.get("photo_file_id"),
             mime=parsed.get("mime"),
+            location=parsed.get("location"),
+            is_start=bool(parsed.get("is_start")),
         )
 
     # Telegram only cares about a 200 ack

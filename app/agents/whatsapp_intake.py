@@ -17,7 +17,7 @@ from app.agents.multilingual import detect_language, status_message
 from app.agents.weather_corroborator import corroborate
 from app.clients import bird_client, telegram_client, twilio_client
 from app.models.claim import ClaimStatus, Farmer
-from app.storage import claims_repo
+from app.storage import claims_repo, farmer_profiles
 
 logger = logging.getLogger(__name__)
 
@@ -286,7 +286,8 @@ def process_inbound_bird(
 
 
 def parse_telegram_update(update: dict) -> dict | None:
-    """Extract (chat_id, body, photo_file_id, mime) from a Telegram webhook update."""
+    """Extract (chat_id, body, photo_file_id, mime, location, is_start) from a
+    Telegram webhook update."""
     msg = update.get("message") or update.get("edited_message")
     if not msg:
         return None
@@ -314,12 +315,21 @@ def parse_telegram_update(update: dict) -> dict | None:
                 photo_file_id = doc.get("file_id")
                 mime = doc_mime
 
+    loc = msg.get("location") if isinstance(msg.get("location"), dict) else None
+    location = None
+    if loc and "latitude" in loc and "longitude" in loc:
+        location = (float(loc["latitude"]), float(loc["longitude"]))
+
+    is_start = isinstance(body, str) and body.strip().lower().startswith("/start")
+
     return {
         "chat_id": chat_id,
         "user_name": ((msg.get("from") or {}).get("first_name") or str(chat_id)),
         "body": body,
         "photo_file_id": photo_file_id,
         "mime": mime,
+        "location": location,
+        "is_start": is_start,
     }
 
 
@@ -330,8 +340,43 @@ def process_inbound_telegram(
     body: str,
     photo_file_id: str | None,
     mime: str | None,
+    location: tuple[float, float] | None = None,
+    is_start: bool = False,
 ) -> IntakeResult:
     """Same pipeline as the WhatsApp variants, but via Telegram Bot API."""
+    # /start — onboarding message with a location-request keyboard
+    if is_start:
+        try:
+            telegram_client.send_message(
+                chat_id,
+                "Hi! I'm ClaimFarm. To file a crop-insurance claim:\n\n"
+                "1) Tap the button below to share your farm location (used for "
+                "weather verification).\n"
+                "2) Then send a photo of the damaged crop with a short caption "
+                "in any language.\n\n"
+                "If you skip step 1, I'll still process the claim but use your "
+                "photo's GPS metadata (if any).",
+                reply_markup=telegram_client.location_request_keyboard(),
+            )
+        except Exception:
+            logger.exception("telegram /start onboarding failed")
+        return IntakeResult(claim_id=None, status="started")
+
+    # Location share — persist and acknowledge
+    if location is not None:
+        lat, lon = location
+        farmer_profiles.set_location(chat_id, lat, lon, name=user_name or "")
+        try:
+            telegram_client.send_message(
+                chat_id,
+                f"Got your location ({lat:.4f}, {lon:.4f}). Now send a photo "
+                "of the damaged crop with a short caption.",
+                reply_markup=telegram_client.remove_keyboard(),
+            )
+        except Exception:
+            logger.exception("telegram location ack failed")
+        return IntakeResult(claim_id=None, status="location_saved")
+
     if not photo_file_id:
         try:
             telegram_client.send_message(
@@ -370,8 +415,14 @@ def process_inbound_telegram(
     damage = assess_damage(image_data_url)
     forensics = photo_forensics.analyze(photo_bytes, image_data_url)
 
-    lat = forensics.gps_lat if forensics.gps_lat is not None else DEFAULT_LATITUDE
-    lon = forensics.gps_lon if forensics.gps_lon is not None else DEFAULT_LONGITUDE
+    # Location precedence: explicitly-shared farm location → EXIF GPS → demo default.
+    saved = farmer_profiles.get_location(chat_id)
+    if saved is not None:
+        lat, lon = saved
+    elif forensics.gps_lat is not None and forensics.gps_lon is not None:
+        lat, lon = forensics.gps_lat, forensics.gps_lon
+    else:
+        lat, lon = DEFAULT_LATITUDE, DEFAULT_LONGITUDE
     claim_date = (
         forensics.capture_time.date()
         if forensics.capture_time is not None
