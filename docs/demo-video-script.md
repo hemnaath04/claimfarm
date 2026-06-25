@@ -63,24 +63,20 @@
 > "A farmer sends a WhatsApp photo. Qwen-VL identifies the crop and the damage. Open-Meteo confirms the weather supports the diagnosis. Qwen embeddings retrieve similar past claims and matching agronomy guidance from a vector database. A PDF claim is drafted and sent to a human adjuster for review."
 
 ### 0:35 – 1:30 — Live dashboard walkthrough (the meat)
-**Visual:** Switch to the Streamlit dashboard. Click into the Ravi Kumar drought-cornfield claim. Cursor through the panels as you narrate.
+**Visual:** Switch to the Streamlit dashboard. Show two claims in the queue. Walk through Ravi Kumar's drought claim first, then click into Lina Tan's flood claim for contrast.
 
 **Voiceover (55 seconds, paced — show, don't rush):**
-> "Here's a claim from Ravi Kumar in Tennessee. The AI assessment ran on a real Wikimedia photo of his cornfield: it identified maize, classified the damage as drought, scored severity at 85 out of 100, and listed the visible indicators it relied on."
+> "Two claims in the queue. The first is from Ravi Kumar. Qwen-VL ran on a real photo of his cornfield: identified maize, classified the damage as drought, severity 85 out of 100. The weather data backs it up — 21 millimeters of rain in 30 days, 14 days above 35 Celsius, a 17-day dry run. Qwen-Max corroborates at 0.9 strength. Clean approval."
 >
-> *(scroll to weather panel)*
+> *(click on the second claim — Lina Tan)*
 >
-> "The weather corroboration pulled 30 days of Open-Meteo data: 21 millimeters of rainfall, 14 days above 35 Celsius, a 17-day dry run. Qwen-Max agreed: corroborated at 0.9 strength."
+> "Now look at Lina Tan's claim. The photo shows flooded fields. The AI agrees with the photo. But the weather data for her location and date doesn't show heavy rainfall — corroboration strength is 0.2. The adjuster sees the mismatch immediately and would ask for more evidence before approving. That's how the agent catches inconsistencies that a busy adjuster would miss."
 >
-> *(scroll to similar claims + fraud flags)*
+> *(scroll to similar claims + fraud flags on either claim)*
 >
-> "Below it, the RAG layer surfaces similar past claims indexed in Alibaba DashVector. If a farmer's narrative was suspiciously close to a previous claim, the fraud check would raise a block flag here."
+> "Below each claim, the RAG layer retrieves similar past claims indexed in Alibaba DashVector — and flags any near-duplicates from the same farmer. The message back to the farmer is localized: Hindi for Ravi, English for Lina."
 >
-> *(scroll to localized message preview)*
->
-> "And the message that goes back to the farmer is localized to their language — in this case, Hindi."
->
-> *(click Approve & submit)*
+> *(click Approve & submit on Ravi's claim)*
 >
 > "On approve, the claim is forwarded to the insurer API, the status hops to submitted, and the farmer gets the notification."
 
