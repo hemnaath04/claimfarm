@@ -122,3 +122,216 @@
   color: oklch(0.94 0.24 122);
   text-shadow: 0 0 18px oklch(0.94 0.24 122 / 35%);
 }
+
+/* -------------------------------------------------------------------------
+ * Acrely auth + error design system (Figma node 2:22)
+ *
+ * Used by /auth/* and the custom 404 / error pages. Keeps the rest of the
+ * marketing site on the original Electric Kiwi flat-lime aesthetic.
+ * --------------------------------------------------------------------- */
+
+:root {
+  --brand-gradient: linear-gradient(
+    128deg,
+    #bdf272 8%,
+    #72e4c2 51%,
+    #8fd9ff 86%
+  );
+  --auth-canvas-bg: #05070a;
+  --card-stroke: rgba(255, 255, 255, 0.1);
+  --mono-label: #8b95a5;
+  --mono-placeholder: #687386;
+}
+
+.auth-canvas {
+  background-color: var(--auth-canvas-bg);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Three layered radial gradients — moss / cyan / violet — that softly
+   illuminate the page behind the cards. Positions match the Figma frame. */
+.auth-canvas::before,
+.auth-canvas::after,
+.auth-canvas > .auth-canvas-violet {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+  filter: blur(2px);
+}
+.auth-canvas::before {
+  width: 720px;
+  height: 720px;
+  top: -240px;
+  left: -220px;
+  background: radial-gradient(
+    circle at 50% 58%,
+    rgba(189, 242, 114, 0.18) 0%,
+    rgba(5, 5, 5, 0) 70%
+  );
+}
+.auth-canvas::after {
+  width: 680px;
+  height: 680px;
+  top: 150px;
+  right: -120px;
+  background: radial-gradient(
+    circle at 50% 58%,
+    rgba(143, 217, 255, 0.14) 0%,
+    rgba(5, 5, 5, 0) 70%
+  );
+}
+.auth-canvas > .auth-canvas-violet {
+  width: 640px;
+  height: 640px;
+  bottom: -160px;
+  right: 80px;
+  background: radial-gradient(
+    circle at 50% 58%,
+    rgba(199, 184, 255, 0.12) 0%,
+    rgba(5, 5, 5, 0) 70%
+  );
+}
+
+/* Card surface used on Acrely auth + error cards. Distinct from .glass so
+   the marketing site's glass treatment doesn't change. */
+.glass-card {
+  background: rgba(17, 24, 39, 0.78);
+  border: 1px solid var(--card-stroke);
+  border-radius: 14px;
+  box-shadow: 0px 24px 54px -18px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+
+.glass-card-violet {
+  background: rgba(30, 24, 48, 0.78);
+}
+
+/* The 34×34 leaf-grid mark — gradient fill, 9px radius. */
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--brand-gradient);
+  display: inline-block;
+  flex-shrink: 0;
+  position: relative;
+}
+.brand-mark::after {
+  /* subtle inner light to keep it from looking flat against the card */
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.18),
+    rgba(255, 255, 255, 0) 55%
+  );
+}
+
+/* Gradient CTA. */
+.btn-gradient {
+  background: var(--brand-gradient);
+  color: #07110d;
+  border: 1px solid rgba(189, 242, 114, 0.45);
+  border-radius: 12px;
+  box-shadow: 0px 12px 32px -8px rgba(114, 228, 194, 0.24);
+  font-weight: 700;
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
+.btn-gradient:hover {
+  filter: brightness(1.05);
+  box-shadow: 0px 14px 36px -8px rgba(114, 228, 194, 0.36);
+}
+.btn-gradient:active {
+  transform: translateY(1px);
+}
+.btn-gradient:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-ghost-translucent {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.btn-ghost-translucent:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+/* Stacked label + input affordance — the input itself is the whole tile. */
+.field {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-stroke);
+  border-radius: 12px;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.field:focus-within {
+  border-color: rgba(189, 242, 114, 0.4);
+  background: rgba(255, 255, 255, 0.07);
+}
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 13px;
+  letter-spacing: 0.04em;
+  color: var(--mono-label);
+  text-transform: uppercase;
+}
+.field-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f8fafc;
+  font: 400 14px/18px var(--font-sans);
+  padding: 0;
+  width: 100%;
+}
+.field-input::placeholder {
+  color: var(--mono-placeholder);
+}
+
+/* Mono eyebrows — sit above big titles or as IDs */
+.eyebrow-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 15px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+/* Status pills */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font: 600 12px/15px var(--font-sans);
+  border: 1px solid transparent;
+}
+.status-pill-ok {
+  background: rgba(34, 51, 27, 0.95);
+  color: #bdf272;
+  border-color: rgba(189, 242, 114, 0.22);
+}
+.status-pill-err {
+  background: rgba(53, 21, 28, 0.95);
+  color: #fda4af;
+  border-color: rgba(253, 164, 175, 0.22);
+}

@@ -3,10 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { postAuthJson } from "@/lib/auth-fetch";
 
 const FRIENDLY: Record<number, string> = {
@@ -45,7 +41,9 @@ export default function SignInPage() {
     }
     setMagicBusy(true);
     try {
-      const data = await postAuthJson<{ consume_url?: string }>("/auth/magic-link", { email });
+      const data = await postAuthJson<{ consume_url?: string }>("/auth/magic-link", {
+        email,
+      });
       if (data.consume_url) {
         toast.success("Magic link ready — opening it now.");
         window.location.href = data.consume_url;
@@ -61,75 +59,80 @@ export default function SignInPage() {
   };
 
   return (
-    <Card className="glass">
-      <CardContent className="p-7">
-        <h1 className="text-xl font-semibold">Sign in</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Welcome back. Sign in to your ClaimFarm account.
-        </p>
+    <div className="glass-card p-5">
+      <div className="flex items-center gap-2.5">
+        <span className="brand-mark" aria-hidden />
+        <span className="text-[22px] font-bold tracking-tight text-[#F8FAFC]">
+          claimfarm
+        </span>
+      </div>
 
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
-          <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Email</label>
-            <Input
-              required
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="mt-1.5 bg-card/40"
-            />
-          </div>
-          <div>
-            <div className="flex items-center justify-between">
-              <label className="text-xs uppercase tracking-wider text-muted-foreground">
-                Password
-              </label>
-              <Link href="/auth/reset" className="text-xs text-primary hover:underline">
-                Forgot?
-              </Link>
-            </div>
-            <Input
-              required
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1.5 bg-card/40"
-            />
-          </div>
-          <Button
-            disabled={busy}
-            type="submit"
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            {busy ? "Signing in…" : "Sign in →"}
-          </Button>
-        </form>
+      <h1 className="mt-4 text-[25px] font-bold leading-8 text-[#F8FAFC]">
+        Welcome back
+      </h1>
+      <p className="mt-1 text-sm text-[#8B95A5]">
+        Sign in to triage claims and manage your workspace.
+      </p>
 
-        <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
-          <Separator className="flex-1" />
-          OR CONTINUE WITH
-          <Separator className="flex-1" />
-        </div>
+      <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-3">
+        <label className="field">
+          <span className="field-label">Email</span>
+          <input
+            required
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter email"
+            className="field-input"
+            autoComplete="email"
+          />
+        </label>
 
-        <Button
-          variant="outline"
-          className="w-full"
+        <label className="field">
+          <span className="field-label flex items-center justify-between">
+            <span>Password</span>
+            <Link
+              href="/auth/reset"
+              className="normal-case tracking-normal text-[11px] text-[#BDF272] hover:underline"
+            >
+              Forgot?
+            </Link>
+          </span>
+          <input
+            required
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter password"
+            className="field-input"
+            autoComplete="current-password"
+          />
+        </label>
+
+        <button
+          disabled={busy}
+          type="submit"
+          className="btn-gradient w-full h-[46px] mt-2 text-sm"
+        >
+          {busy ? "Signing in…" : "Sign in"}
+        </button>
+
+        <button
+          type="button"
           disabled={magicBusy}
           onClick={sendMagicLink}
+          className="btn-ghost-translucent w-full h-[46px] text-sm font-semibold"
         >
-          {magicBusy ? "Sending magic link…" : "Email me a magic link"}
-        </Button>
+          {magicBusy ? "Sending magic link…" : "Email magic link"}
+        </button>
+      </form>
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          New here?{" "}
-          <Link href="/auth/sign-up" className="text-primary hover:underline">
-            Create an account
-          </Link>
-        </p>
-      </CardContent>
-    </Card>
+      <p className="mt-4 text-center text-[13px] text-[#8B95A5]">
+        New here?{" "}
+        <Link href="/auth/sign-up" className="text-[#BDF272] hover:underline">
+          Create an account
+        </Link>
+      </p>
+    </div>
   );
 }

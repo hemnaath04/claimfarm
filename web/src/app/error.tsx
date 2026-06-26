@@ -2,9 +2,6 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { SiteHeader } from "@/components/marketing/site-header";
-import { SiteFooter } from "@/components/marketing/site-footer";
 
 export default function RouteError({
   error,
@@ -14,8 +11,6 @@ export default function RouteError({
   unstable_retry: () => void;
 }) {
   useEffect(() => {
-    // Production builds give us only `digest` — log it so it can be
-    // cross-referenced against the server logs when triaging.
     if (typeof console !== "undefined") {
       console.error("[claimfarm] route error", {
         message: error.message,
@@ -24,43 +19,52 @@ export default function RouteError({
     }
   }, [error]);
 
+  const ref = error.digest ? `REF · ${error.digest.toUpperCase()}` : "REF · UNCAUGHT";
+
   return (
-    <div className="min-h-dvh flex flex-col">
-      <SiteHeader />
-      <main className="flex-1 grid place-items-center px-6 py-24">
-        <div className="max-w-xl text-center">
-          <p className="mono-id text-xs uppercase tracking-[0.28em] text-muted-foreground mb-6">
-            error · uncaught
-          </p>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-            Something <span className="neon-text">misfired</span>.
+    <div className="auth-canvas min-h-dvh flex items-center justify-center px-6 py-12">
+      <div className="auth-canvas-violet" aria-hidden />
+      <main className="relative z-10 w-full max-w-[620px]">
+        <div className="glass-card p-5">
+          <div className="flex items-center gap-2.5">
+            <span className="brand-mark" aria-hidden />
+            <span className="text-[22px] font-bold tracking-tight text-[#F8FAFC]">
+              claimfarm
+            </span>
+          </div>
+
+          <div className="eyebrow-mono mt-4 text-[#9CA3AF]">{ref}</div>
+          <h1 className="mt-1 text-[34px] font-bold leading-[44px] text-[#F8FAFC]">
+            Something misfired
           </h1>
-          <p className="text-muted-foreground mt-4 leading-relaxed">
-            We tripped over an error on this page. Try again, or head home —
-            either way nothing in your account is affected.
+          <p className="mt-2 text-[16px] leading-5 text-[#AEB8C6]">
+            Retry the failed action or share the digest with support — nothing in
+            your account is affected.
           </p>
-          {error.digest ? (
-            <p className="mono-id mt-4 text-xs text-muted-foreground/70">
-              ref · {error.digest}
-            </p>
-          ) : null}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button
+
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
               onClick={() => unstable_retry()}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              className="btn-gradient h-[46px] px-5 text-sm inline-flex items-center"
             >
-              Try again
-            </Button>
-            <Link href="/">
-              <Button variant="outline">Back to home</Button>
+              Retry
+            </button>
+            <Link
+              href="/"
+              className="btn-ghost-translucent h-[46px] px-5 text-sm font-semibold inline-flex items-center"
+            >
+              Back to home
             </Link>
-            <Link href="/contact">
-              <Button variant="ghost">Tell us what broke</Button>
+            <Link
+              href="/contact"
+              className="text-sm text-[#8B95A5] hover:text-[#F8FAFC] transition px-3 py-2"
+            >
+              Tell us what broke →
             </Link>
           </div>
         </div>
       </main>
-      <SiteFooter />
     </div>
   );
 }

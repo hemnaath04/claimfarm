@@ -3,85 +3,101 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+
+function StatusPill({ kind, text }: { kind: "ok" | "err"; text: string }) {
+  return (
+    <span
+      className={`status-pill ${kind === "ok" ? "status-pill-ok" : "status-pill-err"}`}
+    >
+      {text}
+    </span>
+  );
+}
 
 function VerifyInner() {
   const params = useSearchParams();
   const status = params.get("status");
   const error = params.get("error");
 
-  if (status === "ok") {
-    return (
-      <Card className="glass">
-        <CardContent className="p-7 text-center">
-          <div className="text-5xl">✓</div>
-          <h1 className="mt-4 text-xl font-semibold">
-            Email <span className="neon-text">verified</span>
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Your account is fully activated. You can now file claims and invite
-            adjusters to your organisation.
-          </p>
-          <div className="mt-6 flex justify-center gap-2">
-            <Link href="/dashboard">
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                Go to dashboard
-              </Button>
-            </Link>
-            <Link href="/admin">
-              <Button variant="outline">Open adjuster console</Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  return (
+    <div className="glass-card p-5">
+      <div className="flex items-center gap-2.5">
+        <span className="brand-mark" aria-hidden />
+        <span className="text-[22px] font-bold tracking-tight text-[#F8FAFC]">
+          claimfarm
+        </span>
+      </div>
 
-  if (error) {
-    const messages: Record<string, string> = {
-      expired:
-        "That verification link has expired or was already used. Try signing in and we'll send a fresh one.",
-      unknown:
-        "We couldn't match that link to an account. It may have been deleted.",
-    };
-    return (
-      <Card className="glass">
-        <CardContent className="p-7 text-center">
-          <div className="text-5xl">!</div>
-          <h1 className="mt-4 text-xl font-semibold">Link no longer valid</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {messages[error] ?? "Something went wrong verifying that link."}
+      {status === "ok" ? (
+        <>
+          <h1 className="mt-4 text-[25px] font-bold leading-8 text-[#F8FAFC]">
+            You&apos;re verified
+          </h1>
+          <p className="mt-1 text-sm text-[#8B95A5]">
+            Your account is fully activated. You can now file claims and invite
+            adjusters to your workspace.
           </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <StatusPill kind="ok" text="status=ok · verified" />
+          </div>
+          <Link
+            href="/dashboard"
+            className="btn-gradient w-full h-[46px] mt-4 text-sm inline-flex items-center justify-center"
+          >
+            Go to dashboard
+          </Link>
+          <Link
+            href="/admin"
+            className="btn-ghost-translucent w-full h-[46px] mt-3 text-sm font-semibold inline-flex items-center justify-center"
+          >
+            Open adjuster console
+          </Link>
+        </>
+      ) : error ? (
+        <>
+          <h1 className="mt-4 text-[25px] font-bold leading-8 text-[#F8FAFC]">
+            Link no longer valid
+          </h1>
+          <p className="mt-1 text-sm text-[#8B95A5]">
+            {error === "expired"
+              ? "That verification link has expired or was already used. Sign in and we'll send a fresh one."
+              : error === "unknown"
+                ? "We couldn't match that link to an account. It may have been deleted."
+                : "Something went wrong verifying that link."}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <StatusPill kind="err" text={`error · ${error.replace("_", " ")}`} />
+          </div>
           <Link
             href="/auth/sign-in"
-            className="mt-6 inline-block text-sm text-primary hover:underline"
+            className="btn-gradient w-full h-[46px] mt-4 text-sm inline-flex items-center justify-center"
           >
-            Back to sign in →
+            Back to sign in
           </Link>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="glass">
-      <CardContent className="p-7 text-center">
-        <div className="text-5xl">📬</div>
-        <h1 className="mt-4 text-xl font-semibold">Verify your email</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          We just sent you a verification link. Click it to activate your
-          account. Didn&apos;t get it? Check spam, or{" "}
-          <Link href="/auth/sign-up" className="text-primary hover:underline">
-            resend
-          </Link>
-          .
-        </p>
-        <p className="mt-6 text-xs text-muted-foreground">
-          Link expires in 24 hours.
-        </p>
-      </CardContent>
-    </Card>
+        </>
+      ) : (
+        <>
+          <h1 className="mt-4 text-[25px] font-bold leading-8 text-[#F8FAFC]">
+            Check your inbox
+          </h1>
+          <p className="mt-1 text-sm text-[#8B95A5]">
+            We just sent you a verification link. Click it to activate your
+            account.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <StatusPill kind="ok" text="status=ok · verified" />
+            <StatusPill kind="err" text="error · link expired" />
+          </div>
+          <p className="mt-4 text-[12px] text-[#687386]">
+            Didn&apos;t get it? Check spam, or{" "}
+            <Link href="/auth/sign-up" className="text-[#BDF272] hover:underline">
+              resend
+            </Link>
+            . Link expires in 24 hours.
+          </p>
+        </>
+      )}
+    </div>
   );
 }
 

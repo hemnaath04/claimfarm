@@ -3,9 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { postAuthJson } from "@/lib/auth-fetch";
 
 const FRIENDLY: Record<number, string> = {
@@ -50,94 +47,112 @@ export default function SignUpPage() {
   };
 
   return (
-    <Card className="glass">
-      <CardContent className="p-7">
-        <h1 className="text-xl font-semibold">Start your ClaimFarm pilot</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Free for the first 100 filed claims. No card required.
-        </p>
+    <div className="glass-card p-5">
+      <div className="flex items-center gap-2.5">
+        <span className="brand-mark" aria-hidden />
+        <span className="text-[22px] font-bold tracking-tight text-[#F8FAFC]">
+          claimfarm
+        </span>
+      </div>
 
-        {conflict ? (
-          <div className="mt-4 rounded-md border border-amber-400/40 bg-amber-500/10 p-3 text-sm text-amber-100">
-            That email is already registered.{" "}
-            <Link href="/auth/sign-in" className="underline">
-              Sign in
-            </Link>{" "}
-            or{" "}
-            <Link href="/auth/reset" className="underline">
-              reset your password
-            </Link>
-            .
-          </div>
-        ) : null}
+      <h1 className="mt-4 text-[25px] font-bold leading-8 text-[#F8FAFC]">
+        Create your insurer workspace
+      </h1>
+      <p className="mt-1 text-sm text-[#8B95A5]">
+        Free for the first 100 filed claims. No card required.
+      </p>
 
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs uppercase tracking-wider text-muted-foreground">Name</label>
-              <Input
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-1.5 bg-card/40"
-              />
-            </div>
-            <div>
-              <label className="text-xs uppercase tracking-wider text-muted-foreground">
-                Organisation
-              </label>
-              <Input
-                value={org}
-                onChange={(e) => setOrg(e.target.value)}
-                className="mt-1.5 bg-card/40"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Work email</label>
-            <Input
-              required
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1.5 bg-card/40"
-            />
-          </div>
-          <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Password</label>
-            <Input
-              required
-              type="password"
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1.5 bg-card/40"
-            />
-            <p className="mt-1.5 text-[11px] text-muted-foreground">
-              Minimum 8 characters. We hash with Argon2id.
-            </p>
-          </div>
-          <Button
-            disabled={busy}
-            type="submit"
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            {busy ? "Creating account…" : "Create account →"}
-          </Button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link href="/auth/sign-in" className="text-primary hover:underline">
+      {conflict ? (
+        <div className="mt-4 rounded-xl border border-amber-400/40 bg-amber-500/10 p-3 text-sm text-amber-100">
+          That email is already registered.{" "}
+          <Link href="/auth/sign-in" className="underline">
             Sign in
+          </Link>{" "}
+          or{" "}
+          <Link href="/auth/reset" className="underline">
+            reset your password
           </Link>
-        </p>
-        <p className="mt-3 text-center text-[11px] text-muted-foreground">
-          By creating an account you agree to our{" "}
-          <Link href="/legal/terms" className="underline">Terms</Link> and{" "}
-          <Link href="/legal/privacy" className="underline">Privacy Policy</Link>.
-        </p>
-      </CardContent>
-    </Card>
+          .
+        </div>
+      ) : null}
+
+      <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-3">
+        <label className="field">
+          <span className="field-label">Name</span>
+          <input
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Enter name"
+            className="field-input"
+            autoComplete="name"
+          />
+        </label>
+
+        <label className="field">
+          <span className="field-label">Organization</span>
+          <input
+            value={org}
+            onChange={(e) => setOrg(e.target.value)}
+            placeholder="Enter organization"
+            className="field-input"
+            autoComplete="organization"
+          />
+        </label>
+
+        <label className="field">
+          <span className="field-label">Email</span>
+          <input
+            required
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter email"
+            className="field-input"
+            autoComplete="email"
+          />
+        </label>
+
+        <label className="field">
+          <span className="field-label">Password</span>
+          <input
+            required
+            type="password"
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter password"
+            className="field-input"
+            autoComplete="new-password"
+          />
+        </label>
+
+        <button
+          disabled={busy}
+          type="submit"
+          className="btn-gradient w-full h-[46px] mt-2 text-sm"
+        >
+          {busy ? "Creating account…" : "Create account"}
+        </button>
+      </form>
+
+      <p className="mt-4 text-center text-[13px] text-[#8B95A5]">
+        Already have an account?{" "}
+        <Link href="/auth/sign-in" className="text-[#BDF272] hover:underline">
+          Sign in
+        </Link>
+      </p>
+      <p className="mt-2 text-center text-[11px] text-[#687386]">
+        By creating an account you agree to our{" "}
+        <Link href="/legal/terms" className="underline">
+          Terms
+        </Link>{" "}
+        and{" "}
+        <Link href="/legal/privacy" className="underline">
+          Privacy Policy
+        </Link>
+        . We hash with Argon2id.
+      </p>
+    </div>
   );
 }
