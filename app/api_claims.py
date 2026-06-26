@@ -13,13 +13,14 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from app.agents import fraud_check, past_claim_rag
 from app.agents.multilingual import status_message
 from app.clients import insurer
 from app.models.claim import ClaimStatus
-from app.storage import claims_repo
+from app.storage import claims_repo, photo_store
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +125,23 @@ def get_claim(claim_id: str) -> dict[str, Any]:
             for f in flags
         ],
     }
+
+
+@router.get("/claims/{claim_id}/photo")
+def get_claim_photo(claim_id: str):
+    """Stream the photo bytes for this claim.
+
+    The Telegram intake saves the uploaded image to ``data/photos/{id}``
+    under a stable filename. Production deployments swap this for a
+    signed Alibaba OSS URL.
+    """
+    claim = claims_repo.get(claim_id)
+    if claim is None:
+        raise HTTPException(status_code=404, detail="claim not found")
+    path = photo_store.find_photo(claim_id)
+    if path is None:
+        raise HTTPException(status_code=404, detail="no photo on file")
+    return FileResponse(path)
 
 
 @router.get("/claims/{claim_id}/localized_reply")

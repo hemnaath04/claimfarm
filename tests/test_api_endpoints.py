@@ -24,6 +24,13 @@ from fastapi.testclient import TestClient
 def client(tmp_path, monkeypatch):
     db_path = tmp_path / "test.sqlite"
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path}")
+    # TestClient speaks plain HTTP. Force PUBLIC_BASE_URL to HTTP so the
+    # session cookie is set without Secure=True (otherwise httpx drops it
+    # on the next request and every assert about being signed in fails).
+    monkeypatch.setenv("PUBLIC_BASE_URL", "http://testserver")
+    # Disable real email transports — keep tests self-contained.
+    monkeypatch.delenv("RESEND_API_KEY", raising=False)
+    monkeypatch.delenv("SENDGRID_API_KEY", raising=False)
     # Force a fresh engine + settings for this test module.
     from app import config
     from app.storage import db as db_module

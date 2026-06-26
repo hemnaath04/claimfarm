@@ -261,6 +261,9 @@ export default function DashboardPage() {
                 <StatusBadge status={claim.status} />
               </div>
 
+              {/* PHOTO + VERIFICATION SIGNALS */}
+              <PhotoAndVerification detail={detail} />
+
               {/* AI ASSESSMENT */}
               <Card className="glass">
                 <CardHeader>
@@ -531,3 +534,188 @@ export default function DashboardPage() {
     </AppShell>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Photo + verification panel — the bit adjusters look at first.
+// ---------------------------------------------------------------------------
+
+function PhotoAndVerification({ detail }: { detail: ClaimDetail | null }) {
+  const claim = detail?.claim;
+  if (!claim) return null;
+
+  const f = claim.forensics;
+  const photoSrc = claim.photo_urls?.[0]
+    ? new URL(claim.photo_urls[0], API_BASE).toString()
+    : null;
+
+  const signals: Array<{
+    label: string;
+    status: "good" | "warn" | "block" | "neutral";
+    value: string;
+    detail?: string;
+  }> = [];
+
+  // 1. Damage assessment vs. weather
+  if (claim.corroboration) {
+    signals.push({
+      label: "Weather corroboration",
+      status: claim.corroboration.corroborated ? "good" : "warn",
+      value: claim.corroboration.corroborated ? "Corroborated" : "Mismatch",
+      detail: `strength ${claim.corroboration.strength.toFixed(2)}`,
+    });
+  }
+  // 2. EXIF
+  if (f) {
+    signals.push({
+      label: "EXIF metadata",
+      status: f.has_exif ? "good" : "warn",
+      value: f.has_exif ? "Present" : "Stripped",
+      detail: f.has_exif
+        ? `${f.camera_make ?? "?"} ${f.camera_model ?? ""}`.trim()
+        : "Common for downloaded/edited images",
+    });
+    // 3. EXIF GPS
+    signals.push({
+      label: "GPS in EXIF",
+      status:
+        f.gps_lat !== null && f.gps_lon !== null
+          ? "good"
+          : f.has_exif
+            ? "warn"
+            : "neutral",
+      value:
+        f.gps_lat !== null && f.gps_lon !== null
+          ? `${f.gps_lat.toFixed(3)}, ${f.gps_lon?.toFixed(3)}`
+          : "Missing",
+      detail:
+        f.gps_lat !== null
+          ? "Cross-check with farmer location"
+          : "Can't pin photo to a place",
+    });
+    // 4. Capture time
+    signals.push({
+      label: "Capture time",
+      status: f.capture_time ? "good" : "warn",
+      value: f.capture_time
+        ? new Date(f.capture_time).toLocaleString()
+        : "Unknown",
+      detail: f.capture_time
+        ? "Compared against claim date"
+        : "Can't verify when the photo was taken",
+    });
+    // 5. Qwen-VL authenticity
+    signals.push({
+      label: "Qwen-VL authenticity",
+      status:
+        f.authenticity_score >= 0.7
+          ? "good"
+          : f.authenticity_score >= 0.4
+            ? "warn"
+            : "block",
+      value: `${Math.round(f.authenticity_score * 100)}%`,
+      detail: f.appears_real_phone_photo
+        ? "Looks like a real phone photo"
+        : "Looks like a screenshot, render, or watermarked image",
+    });
+  }
+  // 6. Near-duplicate / fraud signals
+  const blockFlag = detail?.fraud_flags?.find((x) => x.severity === "block");
+  const warnFlag = detail?.fraud_flags?.find((x) => x.severity === "warn");
+  signals.push({
+    label: "Near-duplicate check",
+    status: blockFlag ? "block" : warnFlag ? "warn" : "good",
+    value: blockFlag
+      ? "Duplicate of past claim"
+      : warnFlag
+        ? "Similar narrative"
+        : "Unique",
+    detail: blockFlag?.message ?? warnFlag?.message ?? "Compared via DashVector",
+  });
+
+  return (
+    <Card className="glass">
+      <CardHeader>
+        <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground">
+          Claim photo + verification signals
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-4">
+          <div className="rounded-xl overflow-hidden bg-black/40 border border-white/5 aspect-[4/3] grid place-items-center">
+            {photoSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photoSrc}
+                alt={`Claim ${claim.claim_id} photo`}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="text-center px-6">
+                <div className="eyebrow-mono text-[#8B95A5]">no photo on file</div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  This claim has no photo attached. Demo seed claims are
+                  text-only; live Telegram intake saves the photo to disk +
+                  serves it here.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <ul className="space-y-2">
+            {signals.map((s) => (
+              <li
+                key={s.label}
+                className="flex items-start gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2.5"
+              >
+                <SignalDot status={s.status} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-[12px] uppercase tracking-wider text-muted-foreground">
+                      {s.label}
+                    </span>
+                    <span className="text-[13px] font-medium text-[#F8FAFC] tabular-nums">
+                      {s.value}
+                    </span>
+                  </div>
+                  {s.detail ? (
+                    <div className="mt-0.5 text-[11px] text-muted-foreground truncate">
+                      {s.detail}
+                    </div>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+        {!f ? (
+          <p className="mt-3 text-[12px] text-amber-200/80">
+            Photo forensics not run on this claim — likely a demo seed or an
+            intake older than the forensics pipeline. New Telegram-filed claims
+            include full EXIF + Qwen-VL authenticity by default.
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SignalDot({ status }: { status: "good" | "warn" | "block" | "neutral" }) {
+  const color =
+    status === "good"
+      ? "#BDF272"
+      : status === "warn"
+        ? "#FDD68A"
+        : status === "block"
+          ? "#FDA4AF"
+          : "#8B95A5";
+  return (
+    <span
+      className="mt-2 h-2 w-2 rounded-full shrink-0"
+      style={{ background: color, boxShadow: `0 0 8px ${color}55` }}
+      aria-hidden
+    />
+  );
+}
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8000";

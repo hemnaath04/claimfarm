@@ -451,6 +451,17 @@ def process_inbound_telegram(
         forensics=forensics,
     )
 
+    # Persist the photo bytes under the claim_id so the adjuster console can
+    # render them. Attach a public reference to photo_urls. We deliberately
+    # save AFTER build_claim so the path is keyed by the final claim_id.
+    try:
+        from app.storage import photo_store
+
+        photo_store.save_bytes(claim.claim_id, photo_bytes, mime=image_mime)
+        claim.photo_urls = [photo_store.public_url(claim.claim_id)]
+    except Exception:
+        logger.exception("photo persistence failed (telegram path)")
+
     try:
         pdf_path = render_claim_pdf(claim, f"data/pdfs/{claim.claim_id}.pdf")
         claims_repo.save(claim, pdf_path=str(pdf_path))
