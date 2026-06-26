@@ -1,142 +1,182 @@
 # ClaimFarm — 3-minute demo video script
 
 > Target: 180 seconds (judges stop watching at 3:00 sharp per rules).
-> Tone: serious, calm, technical — no salesman energy. Let the work speak.
-> Tool: QuickTime (macOS) screen + mic recording, then trim in iMovie.
+> Tone: calm, technical, evidence-first — no salesman energy. Let the work speak.
+> Tool: QuickTime (macOS) screen + mic recording, then trim in iMovie or DaVinci Resolve.
 
-## Asset prep — do these BEFORE you press record
+## What's changed vs the earlier script
 
-1. **Reset the dashboard data** so the demo is reproducible:
-   ```bash
-   cd ~/projects/claimfarm
-   rm -f claimfarm.sqlite
-   uv run python scripts/reindex_claims.py   # clears vector store of stale claims
-   ```
+We now have a real product surface live on the open internet:
 
-2. **Pre-seed two claims** so the queue isn't empty:
-   ```bash
-   # Claim 1 — Ravi Kumar, drought, Hindi farmer
-   uv run python scripts/seed_demo_claim.py \
-     data/eval/sample_drought_corn.jpg 35.15 -89.97 2007-08-15 \
-     "Ravi Kumar" +91-555-0100 hi
+- Frontend: **`https://claimfarm-dashboard.vercel.app`** — Next.js + the Figma-ported design system (auth-canvas backgrounds, brand mark, gradient CTAs).
+- Backend: **`https://claimfarm-api-wovsxktpbk.ap-southeast-1.fcapp.run`** — Alibaba Function Compute 3.0, custom container pulled from `ghcr.io/hemnaath04/claimfarm:latest`.
+- Telegram bot is the live intake channel (Twilio/Bird were dead-ended on the free tier).
+- Streamlit dashboard is gone — the adjuster console now lives at `/admin`, the workspace owner dashboard at `/dashboard`.
+- The adjuster claim detail includes the **Claim photo + verification signals** card (EXIF, Qwen-VL authenticity, weather corroboration, GPS, near-duplicate).
 
-   # Claim 2 — different farmer, flood (download a flood photo first)
-   curl -sSLo data/eval/sample_flood.jpg \
-     "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Drought_affected_Maize_crop_-_geograph.org.uk_-_7267273.jpg/960px-Drought_affected_Maize_crop_-_geograph.org.uk_-_7267273.jpg"
-   uv run python scripts/seed_demo_claim.py \
-     data/eval/sample_flood.jpg 11.5564 104.9282 2024-08-10 \
-     "Lina Tan" +60-12-3456789 en
-   ```
+No laptop processes are required. Everything in the demo is running on Vercel + Alibaba Cloud.
 
-3. **Start the services** in three terminal windows:
-   ```bash
-   # T1 — mock insurer (port 8001)
-   uv run uvicorn mock_insurer.main:app --port 8001 --reload
+## Asset prep — before you press record
 
-   # T2 — Streamlit dashboard
-   uv run streamlit run dashboard/main.py
+1. **Reset cookies in the recording browser** so you record a clean sign-up.
+   - Brave/Chrome → Cmd+Shift+Delete → cookies for `vercel.app` + `*.fcapp.run` only.
 
-   # T3 — keep open for live curl to FC
-   ```
+2. **Open these tabs in this order** (Cmd+1 to Cmd+6 will cycle cleanly):
+   - **Tab 1**: `https://claimfarm-dashboard.vercel.app` (marketing landing).
+   - **Tab 2**: `https://claimfarm-dashboard.vercel.app/auth/sign-up` (auth flow).
+   - **Tab 3**: `https://claimfarm-dashboard.vercel.app/admin` (adjuster console — the centrepiece).
+   - **Tab 4**: `https://claimfarm-dashboard.vercel.app/dashboard` (workspace owner).
+   - **Tab 5**: Telegram desktop, conversation with your `@claimfarm_bot`.
+   - **Tab 6**: `https://github.com/hemnaath04/claimfarm` (repo).
 
-4. **Open browser tabs in this order** (so Cmd+1, Cmd+2, etc. switch cleanly):
-   - Tab 1: Streamlit dashboard (http://localhost:8501)
-   - Tab 2: docs/architecture.md rendered on GitHub
-   - Tab 3: The live Function Compute /docs URL
-   - Tab 4: Alibaba Cloud console showing FC function overview
-   - Tab 5: VS Code with `app/agents/damage_assessor.py` open
+3. **Have a damaged-crop photo ready on your desktop.** Use `data/eval/sample_drought_corn.jpg` or any real phone photo of distressed maize / wheat / rice. The verification panel pops more when the photo is a real phone capture (EXIF present, GPS, capture time).
 
-5. **Record at 1080p or higher**. QuickTime → File → New Screen Recording → choose internal mic + system audio if you want UI clicks audible.
+4. **Pre-record optional B-roll**:
+   - The Alibaba FC 3.0 console showing `claimfarm-api` "Running".
+   - The Vercel project list showing the production deployment "Ready".
+   - The DashVector cluster overview.
+   These can be still images dropped onto the timeline as cutaways.
 
-## Script (every line, with timing)
+5. **Mic + capture**: QuickTime → File → New Screen Recording → choose internal mic. Aim for **1080p+, 30fps**.
 
-### 0:00 – 0:15 — The problem
-**Visual:** Title card "ClaimFarm" + subtitle "Crop insurance for the next 500 million farmers" on a black background for 3 seconds. Then cut to a stock photo of a damaged field (use the same data/eval/sample_drought_corn.jpg fullscreen).
+## Script — every line, with timing
 
-**Voiceover (read in 12 seconds):**
-> "Five hundred million smallholder farmers lose crops to weather every year. Most never file an insurance claim — the forms are in the wrong language, demand evidence they can't structure, and assume literacy in domains they were never trained for. ClaimFarm fixes that with one photo."
+### 0:00 – 0:12 · Hook + problem
 
-### 0:15 – 0:35 — Pipeline overview
-**Visual:** Show docs/architecture.md mermaid diagram fullscreen for 20 seconds. Optionally trace the flow with your cursor.
+**Visual:** Title card on the auth-canvas black `#05070A`. Brand mark on the left (the gradient leaf-grid tile) + the wordmark `claim` + neon `farm`. Subtitle below: *"Insurance claims for the next 500 million farmers."* Hold 3 seconds, then cut to a fullscreen still of distressed maize.
 
-**Voiceover:**
-> "A farmer sends a WhatsApp photo. Qwen-VL identifies the crop and the damage. Open-Meteo confirms the weather supports the diagnosis. Qwen embeddings retrieve similar past claims and matching agronomy guidance from a vector database. A PDF claim is drafted and sent to a human adjuster for review."
+**Voiceover (~10s):**
 
-### 0:35 – 1:30 — Live dashboard walkthrough (the meat)
-**Visual:** Switch to the Streamlit dashboard. Show two claims in the queue. Walk through Ravi Kumar's drought claim first, then click into Lina Tan's flood claim for contrast.
+> "Five hundred million smallholder farmers globally are locked out of insurance — the paperwork is in the wrong language and demands evidence they can't structure. ClaimFarm turns one photo into a filed claim in sixty seconds."
 
-**Voiceover (55 seconds, paced — show, don't rush):**
-> "Two claims in the queue. The first is from Ravi Kumar. Qwen-VL ran on a real photo of his cornfield: identified maize, classified the damage as drought, severity 85 out of 100. The weather data backs it up — 21 millimeters of rain in 30 days, 14 days above 35 Celsius, a 17-day dry run. Qwen-Max corroborates at 0.9 strength. Clean approval."
+### 0:12 – 0:40 · Farmer side (Telegram intake)
+
+**Visual:** Switch to **Telegram desktop** (Tab 5). Show the conversation. Send a photo with a short caption — e.g. `"My maize field after the dry spell"`. Within ~30 seconds the bot replies with a localized confirmation message and a claim reference.
+
+**Voiceover (~25s):**
+
+> "The farmer interface is Telegram — free, low-bandwidth, supports voice, runs on any feature phone with a data line. They send a photo and a one-line description. In the background, Qwen-VL identifies the crop and damage, Qwen-Max corroborates against Open-Meteo weather data for the photo's GPS and capture date, and the bot replies in the farmer's own language. No forms, no upload portals."
+
+### 0:40 – 1:35 · Adjuster console (the showpiece — 55 seconds)
+
+**Visual:** Cut to **Tab 3 — `/admin`**. The queue shows the freshly-filed claim at the top. Click it.
+
+The claim detail panel scrolls in. **Pause for two beats on the "Claim photo + verification signals" card** — this is the new bit the judges haven't seen.
+
+Then scroll through:
+- AI damage assessment (Qwen-VL-Max card with crop / cause / severity / affected / confidence).
+- Weather corroboration (Open-Meteo + Qwen-Max card, with the strength bar and flags).
+- Similar past claims (DashVector card).
+- Localized farmer message preview.
+- Adjuster decision row at the bottom.
+
+Click **Approve & submit**. The status pill flips from `pending review` → `submitted`.
+
+**Voiceover (~52s):**
+
+> "The adjuster console. Up top — the photo the farmer sent, alongside six verification signals we compute on every intake. EXIF metadata present, GPS coordinates pulled from the camera, capture time, Qwen-VL authenticity score — that's a vision prompt asking 'is this a real phone photo, or a screenshot, render, or stock image?' — weather corroboration against Open-Meteo for the photo's location and date, and a near-duplicate check against past claims indexed in Alibaba DashVector.
 >
-> *(click on the second claim — Lina Tan)*
+> Below — the structured AI damage assessment. Crop, cause, severity zero to one hundred, affected area, confidence. The corroboration card cross-references against thirty days of historical weather. Similar past claims surface via the same embeddings.
 >
-> "Now look at Lina Tan's claim. The photo shows flooded fields. The AI agrees with the photo. But the weather data for her location and date doesn't show heavy rainfall — corroboration strength is 0.2. The adjuster sees the mismatch immediately and would ask for more evidence before approving. That's how the agent catches inconsistencies that a busy adjuster would miss."
->
-> *(scroll to similar claims + fraud flags on either claim)*
->
-> "Below each claim, the RAG layer retrieves similar past claims indexed in Alibaba DashVector — and flags any near-duplicates from the same farmer. The message back to the farmer is localized: Hindi for Ravi, English for Lina."
->
-> *(click Approve & submit on Ravi's claim)*
->
-> "On approve, the claim is forwarded to the insurer API, the status hops to submitted, and the farmer gets the notification."
+> Approve, and the claim is forwarded to the carrier endpoint, the status flips, and the farmer gets a localized notification."
 
-### 1:30 – 2:00 — Architecture + Alibaba Cloud
-**Visual:** Cut to terminal. Run the live curl:
-```bash
-curl -sS https://claimfarm-api-wovsxktpbk.ap-southeast-1.fcapp.run/healthz
+### 1:35 – 2:00 · Workspace dashboard
+
+**Visual:** Cut to **Tab 4 — `/dashboard`**. Land on the Overview tab — show the four KPI tiles (claims this month, approved, fraud flags, time-to-decision). Switch to the **API & webhooks** tab. Click **Issue key**. The one-time secret pane appears with the `cf_live_…` token. Click Copy. Switch to revoke flow briefly — show the revoked badge appearing.
+
+**Voiceover (~22s):**
+
+> "Operators get a workspace dashboard — claims this month, approval rate, fraud flags, average time to decision. Issue API keys with scoped permissions for carrier integrations, webhooks signed with HMAC, GDPR data export and account deletion built in. The whole surface is auth-gated with Argon2id password hashing, opaque session cookies, and a magic-link option for passwordless sign-in."
+
+### 2:00 – 2:25 · Alibaba Cloud proof
+
+**Visual:** Cut to a terminal (or a pre-prepared still). Show the curl:
+
 ```
-Show `{"status":"ok"}`. Then cut to the Alibaba Cloud console showing the FC function "Running" + the OSS bucket with claim PDFs + the DashVector cluster.
+$ curl -sS https://claimfarm-api-wovsxktpbk.ap-southeast-1.fcapp.run/healthz
+{"status":"ok"}
 
-**Voiceover (30 seconds):**
-> "The backend runs on Alibaba Function Compute, region Singapore, behind a public HTTPS trigger. Photos and rendered PDFs land in Alibaba Object Storage. The vector store is Alibaba DashVector — the same product family as Qwen models, which means the agent's vision, reasoning, and embeddings all come from one ecosystem."
+$ curl -sS .../openapi.json | jq '.paths | length'
+31
+```
 
-### 2:00 – 2:30 — Three Qwen capabilities
-**Visual:** Switch to VS Code, briefly show app/clients/qwen.py (the chat + vision wrapper) for 5 seconds, then app/agents/damage_assessor.py (the structured prompt) for 10 seconds, then docs/architecture.md highlighting the "Qwen Cloud capability inventory" section.
+Then cut to the **Alibaba FC 3.0 console** with `claimfarm-api` showing the image `ghcr.io/hemnaath04/claimfarm:latest` and the function in Running state. Brief cut to the DashVector cluster page.
 
-**Voiceover:**
-> "Three distinct Qwen Cloud capabilities are exercised: Qwen-VL for multimodal damage assessment, Qwen-Max for reasoning and multilingual rewriting, and Qwen text-embedding-v3 for retrieval and fraud detection. Each one has a structured Pydantic schema at its boundary — no hand-waving JSON."
+**Voiceover (~22s):**
 
-### 2:30 – 2:55 — Impact & close
-**Visual:** Title card with three numbers stacked: "500M farmers · 10 supported languages · 1 photo → 1 filed claim". Hold for 25 seconds.
+> "The backend runs on Alibaba Function Compute 3.0, Singapore region, custom container pulled from a public registry. Thirty-one HTTP routes live behind one public HTTPS trigger. Photos persist to Alibaba Object Storage. The vector store is Alibaba DashVector — same product family as the Qwen models we call, so vision, reasoning, embeddings, and retrieval all flow through one Alibaba Cloud account."
 
-**Voiceover:**
-> "ClaimFarm collapses an inaccessible workflow into one photo. It's open source, it runs end-to-end on Alibaba Cloud, and it's built to be picked up by any micro-insurer or NGO operating in the field. Thanks for watching."
+### 2:25 – 2:50 · Three Qwen capabilities
 
-### 2:55 – 3:00 — Title card
-**Visual:** Repo URL `github.com/hemnaath04/claimfarm` on a black card with the ClaimFarm wordmark. No audio.
+**Visual:** Briefly show `app/clients/qwen.py` open in VS Code for two beats (the chat + vision wrapper, ~5s), then `app/agents/photo_forensics.py` (the structured authenticity prompt, ~5s), then scroll through `docs/architecture.md` highlighting the Qwen capability inventory section.
+
+**Voiceover (~22s):**
+
+> "Three Qwen capabilities are exercised end-to-end. Qwen-VL-Max for multimodal damage assessment and photo authenticity. Qwen-Max for reasoning, weather corroboration, and multilingual rewriting in ten languages. Qwen text-embedding-v3 for retrieval and near-duplicate fraud detection. Every model boundary uses a Pydantic schema — no hand-waving JSON."
+
+### 2:50 – 3:00 · Close
+
+**Visual:** Black card. Centred: brand mark + `claimfarm` wordmark. Below, the three URLs stacked in JetBrains Mono:
+
+```
+github.com/hemnaath04/claimfarm
+claimfarm-dashboard.vercel.app
+claimfarm-api-wovsxktpbk.ap-southeast-1.fcapp.run
+```
+
+**Voiceover (~8s):**
+
+> "Open source, MIT licensed, running entirely on Alibaba Cloud. Thanks for watching."
 
 ## Production tips
 
-- **Voiceover separately**: record the screen capture silent first, then record voiceover into a separate audio file (QuickTime → File → New Audio Recording), then drop them on the same iMovie timeline. Easier to retake voice without re-doing the screen.
-- **Speak slowly**. Aim for 150 words/min — about the pace of TED talks. You have 450 words above. Time yourself.
-- **No music** unless it's royalty-free (the rules forbid copyrighted music). YouTube Audio Library has good free options under "Cinematic" or "Ambient".
-- **Captions help judges**: YouTube auto-captions are usually fine for this length — just review and fix the Qwen / Open-Meteo / DashVector names.
-- **Upload as Unlisted while iterating**, then switch to Public on submission day.
+- **Voiceover separately.** Record the screen capture silent first, then record voiceover into a second QuickTime audio file. Drop them on the same iMovie timeline — easier to retake voice without redoing the screen.
+- **Speak at ~150 wpm** (TED-talk cadence). The script above is ~430 words → fits in 175s comfortably.
+- **No music** unless it's royalty-free. YouTube Audio Library → "Cinematic" or "Ambient" works.
+- **Captions help judges**: YouTube auto-captions are fine for this length — review and fix the Qwen, Open-Meteo, DashVector, Argon2id, Pydantic spellings.
+- **Upload Unlisted while iterating**, flip to Public on submission day.
+- **Test the demo URLs from a clean browser session** (incognito) before recording — confirms cookies aren't masking a regression.
 
-## Hard rules sanity check
+## Hard-rules sanity check
 
-- [ ] Total runtime ≤ 3:00 (judges stop watching at 3:00 exactly)
+- [ ] Runtime ≤ 3:00
 - [ ] No third-party trademarks or copyrighted music
-- [ ] Uploaded publicly on YouTube/Vimeo/Youku
+- [ ] Uploaded publicly on YouTube / Vimeo / Youku
 - [ ] Captions visible (auto-generated is fine)
-- [ ] Demo shows the Project actually working (not just slides)
+- [ ] Demo shows the project actually working (live URLs, not just slides)
+- [ ] Track 4 (Autopilot Agent) called out
 
-## Suggested filename + title for upload
+## Filename + title for upload
 
 - **File**: `claimfarm-demo.mp4`
-- **YouTube title**: `ClaimFarm — Crop insurance claims via WhatsApp photo (Qwen Cloud Hackathon, Track 4)`
+- **YouTube title**: `ClaimFarm — Crop insurance claims in 60 seconds (Qwen Cloud Hackathon, Track 4)`
 - **YouTube description**:
-  ```
-  ClaimFarm turns a smallholder farmer's WhatsApp photo of a damaged crop
-  into a filed insurance claim. Built on Qwen-VL-Max, Qwen-Max, and Qwen
-  text-embedding-v3 (Qwen Cloud) with Alibaba Function Compute, OSS, and
-  DashVector.
 
-  Track 4 (Autopilot Agent) submission for the Global AI Hackathon
-  Series with Qwen Cloud.
+```
+ClaimFarm turns a smallholder farmer's Telegram photo of a damaged
+crop into a filed insurance claim. Built on Qwen-VL-Max, Qwen-Max,
+and Qwen text-embedding-v3 with Alibaba Function Compute 3.0,
+Object Storage, and DashVector.
 
-  Code: https://github.com/hemnaath04/claimfarm
-  Live API: https://claimfarm-api-wovsxktpbk.ap-southeast-1.fcapp.run
+Six verification signals per claim — EXIF metadata, GPS, capture
+time, Qwen-VL authenticity, weather corroboration via Open-Meteo,
+and DashVector near-duplicate detection — give the human adjuster
+the evidence they need to approve in seconds.
 
-  Open source, MIT licensed.
-  ```
+Track 4 (Autopilot Agent) — Global AI Hackathon Series with Qwen Cloud.
+
+Code: https://github.com/hemnaath04/claimfarm
+Live frontend: https://claimfarm-dashboard.vercel.app
+Live API: https://claimfarm-api-wovsxktpbk.ap-southeast-1.fcapp.run
+
+Open source, MIT licensed.
+```
+
+## Quick fallbacks if something breaks during recording
+
+| Problem | Fallback |
+|---|---|
+| Telegram bot is slow on a cold-start FC instance | The first message after a long idle can take 10-15s. Warm it up with a `curl /healthz` before recording. |
+| The freshly-filed claim doesn't show forensics | FC's `/tmp` is wiped between cold starts. Send the photo twice — the second one will land with a warm instance and full forensics. |
+| Vercel cookie issue (cf_session) | Sign in fresh in the recording browser; SameSite=None requires HTTPS, which both deployed surfaces have. |
+| Auth verification email | The dev-mode response includes a `verification_url` field that the sign-up flow auto-follows. You'll see the green "You're verified" card in ~2s. |
