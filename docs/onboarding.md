@@ -124,6 +124,8 @@ curl -sS "http://localhost:8000/api/admin/audit?limit=20" -b /tmp/cf
 | Customise the landing page | `web/src/app/page.tsx` |
 | Customise the adjuster console | `web/src/app/admin/page.tsx` |
 | Customise the dashboard tabs | `web/src/app/dashboard/page.tsx` |
+| Wire a real payments provider | `app/clients/payments.py` (Paddle / LemonSqueezy / Razorpay) |
+| Wire a real KYC provider | `app/clients/identity_verification.py` (Persona / Veriff / Onfido) |
 
 ## 8. Tests + CI
 

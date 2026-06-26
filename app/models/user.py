@@ -36,7 +36,7 @@ class Organisation(BaseModel):
     plan: str = "pilot"   # pilot | growth | enterprise
     region: str = "ap-southeast-1"
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    stripe_customer_id: str | None = None
+    payments_customer_id: str | None = None  # provider-agnostic external customer id
 
 
 class User(BaseModel):

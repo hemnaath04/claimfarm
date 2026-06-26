@@ -38,11 +38,11 @@ The product surface is a real, sellable SaaS:
 
 - **Marketing site** — `/`, `/pricing`, `/about`, `/faq`, `/blog`, `/contact`, `/farmer`, `/legal/terms`, `/legal/privacy`
 - **Auth** — sign-up, sign-in, sign-out, password reset, email verification, server-side sessions, RBAC (`owner > admin > moderator > reviewer > farmer`), audit log
-- **Identity verification** — provider abstraction (MockProvider by default; Stripe Identity, Persona, Veriff, Onfido subclasses ready)
+- **Identity verification** — provider abstraction (MockProvider by default; Persona, Veriff, Onfido subclasses ready)
 - **Adjuster console** — `/admin`: queue, AI assessment, weather corroboration, photo forensics, similar past claims, fraud flags, localized farmer message, decision controls
-- **User dashboard** — `/dashboard`: overview, billing (Stripe stub), team + RBAC, API & webhooks, notifications, settings
+- **User dashboard** — `/dashboard`: overview, billing (disabled by default), team + RBAC, API & webhooks, notifications, settings
 - **Channels** — Telegram (working end-to-end), Twilio + Bird WhatsApp (code shipped, trial-tier limits documented)
-- **Payments** — Stripe Checkout + webhook abstraction (stub-mode when unset)
+- **Payments** — merchant-of-record abstraction (Paddle / LemonSqueezy / Razorpay), `PAYMENTS_PROVIDER=none` by default
 - **Notifications** — multi-channel dispatcher (email, SMS, in-app) with templates
 - **DevOps** — Dockerfile, docker-compose.yml, GitHub Actions for backend lint+test and web typecheck+build, dual-push to Alibaba ACR + ghcr.io
 - **Docs** — architecture, deployment, API reference, security + threat model, developer onboarding, demo video script
@@ -64,8 +64,8 @@ The product surface is a real, sellable SaaS:
 | Farmer channels | Telegram Bot API, Twilio Programmable Messaging, Bird Conversations |
 | Weather | Open-Meteo historical archive |
 | PDF | WeasyPrint |
-| Identity verification | Provider abstraction (Stripe Identity / Persona / Veriff / Onfido) |
-| Payments | Stripe (stub-mode without keys) |
+| Identity verification | Provider abstraction (Persona / Veriff / Onfido) |
+| Payments | Provider abstraction (Paddle / LemonSqueezy / Razorpay) — disabled by default |
 | Deployment | Alibaba Function Compute 3.0 (backend) + Vercel (web) |
 
 ## Local setup
@@ -106,13 +106,13 @@ claimfarm/
 │   ├── clients/                # qwen, weather, vector_store, embeddings,
 │   │                           # alibaba_oss, insurer, twilio_client, bird_client,
 │   │                           # telegram_client, identity_verification,
-│   │                           # perceptual_hash, notifications, stripe_client
+│   │                           # perceptual_hash, notifications, payments
 │   ├── models/                 # pydantic schemas (damage, weather, claim,
 │   │                           # forensics, user)
 │   ├── storage/                # SQLModel repos: claims, users, farmer_profiles,
 │   │                           # audit_log
 │   ├── api_admin.py            # admin API (user search/suspend/role/audit)
-│   ├── api_billing.py          # Stripe checkout + webhook
+│   ├── api_billing.py          # payments checkout + webhook
 │   ├── api_claims.py           # adjuster console API
 │   ├── api_identity.py         # KYC session + result
 │   ├── main.py                 # FastAPI app composition

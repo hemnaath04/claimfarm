@@ -38,8 +38,8 @@ flowchart LR
   %% --- Third party ---
   subgraph TP[Third-party]
     OM["Open-Meteo · weather"]
-    IDV["KYC providers (Stripe Identity / Persona / Veriff / Onfido)"]
-    STR["Stripe · billing"]
+    IDV["KYC providers (Persona / Veriff / Onfido)"]
+    STR["Payments (Paddle / LemonSqueezy / Razorpay)"]
     SES["Resend / SendGrid · email"]
     SMS["Twilio SMS · transactional SMS"]
   end
@@ -113,7 +113,7 @@ flowchart LR
 
    Browser ── POST /api/identity/start ──▶ IdentityProvider
                                           │
-                                          └── MockProvider | StripeIdentity | …
+                                          └── MockProvider | Persona | Veriff | Onfido
                                                              │
                                                              └── audit("identity.session_started")
 ```
@@ -144,7 +144,7 @@ flowchart LR
 | Track 4 ask | How ClaimFarm answers it |
 |---|---|
 | Ambiguous inputs | A photo + a voice memo in Hindi, no structured form |
-| External tool invocation | Qwen-VL, Open-Meteo, DashVector, OSS, Insurer API, Twilio/Bird/Telegram, Stripe Identity, Stripe |
+| External tool invocation | Qwen-VL, Open-Meteo, DashVector, OSS, Insurer API, Twilio/Bird/Telegram, KYC provider, payments provider |
 | Human-in-the-loop checkpoint | Streamlit + Next.js adjuster review — approve / reject / request-more-info gates the insurer submission |
 | Production readiness | Three Alibaba Cloud services in production, structured pydantic schemas at every hop, deterministic loss math, RAG-grounded reasoning, fraud detection, multilingual replies, RBAC, audit log, signed-URL storage, rate limiting, security headers, dual UIs |
 

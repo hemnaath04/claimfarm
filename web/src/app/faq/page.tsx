@@ -29,7 +29,7 @@ const FAQS = [
   },
   {
     q: "What identity verification do you use?",
-    a: "Government-issued ID (driver license, passport, national ID), selfie + liveness, OCR extraction, document authenticity, manual review queue. We abstract the underlying provider so deployments can use Stripe Identity, Persona, Veriff, Onfido, or a self-hosted equivalent.",
+    a: "Government-issued ID (driver license, passport, national ID), selfie + liveness, OCR extraction, document authenticity, manual review queue. We abstract the underlying provider so deployments can use Persona, Veriff, Onfido, or a self-hosted equivalent.",
   },
   {
     q: "Where does data live?",

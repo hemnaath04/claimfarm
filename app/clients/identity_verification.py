@@ -1,10 +1,14 @@
 """Identity-verification provider abstraction (KYC + liveness).
 
-Production deployments swap in Stripe Identity, Persona, Veriff, or
-Onfido by setting `IDENTITY_PROVIDER` and the matching credentials.
-With no provider configured we fall back to `MockProvider`, which
-returns deterministic-but-realistic results so the rest of the system
-can be tested end-to-end without third-party costs.
+Production deployments swap in Persona, Veriff, or Onfido by setting
+`IDENTITY_PROVIDER` and the matching credentials. With no provider
+configured we fall back to `MockProvider`, which returns
+deterministic-but-realistic results so the rest of the system can be
+tested end-to-end without third-party costs.
+
+Stripe Identity is intentionally not in this list — it requires a
+Stripe account which needs a US SSN + registered business. The three
+listed providers accept individual / international developers.
 """
 
 from __future__ import annotations
@@ -114,24 +118,55 @@ class MockProvider:
 
 
 # ---------------------------------------------------------------------------
-# Real providers (Stripe Identity / Persona / Veriff / Onfido)
+# Real providers (Persona / Veriff / Onfido)
 # ---------------------------------------------------------------------------
 #
 # Each real provider needs a small subclass implementing start_session +
 # evaluate against its own SDK. We ship the shape here and leave the bodies
-# as TODO until credentials are provisioned. Production deployments simply
-# set IDENTITY_PROVIDER=<name> + the credential env vars.
+# as TODO until credentials are provisioned. Set IDENTITY_PROVIDER=<name>.
 
 
-class StripeIdentityProvider:
-    name = "stripe_identity"
+class PersonaProvider:
+    name = "persona"
 
     def __init__(self) -> None:
         s = get_settings()
-        if not getattr(s, "stripe_secret_key", ""):
-            raise RuntimeError("STRIPE_SECRET_KEY must be set for stripe_identity")
-        # TODO: import stripe; stripe.api_key = s.stripe_secret_key
-        raise NotImplementedError("Stripe Identity not yet wired — set credentials")
+        if not getattr(s, "persona_api_key", ""):
+            raise RuntimeError("PERSONA_API_KEY must be set for persona")
+        # TODO: store + call POST /api/v1/inquiries with the inquiry-template-id
+        raise NotImplementedError("Persona not yet wired — set PERSONA_API_KEY")
+
+    def start_session(self, *, user_id: str, return_url: str) -> dict:  # noqa: ARG002
+        raise NotImplementedError
+
+    def evaluate(self, *, session_id: str) -> IdvResult:  # noqa: ARG002
+        raise NotImplementedError
+
+
+class VeriffProvider:
+    name = "veriff"
+
+    def __init__(self) -> None:
+        s = get_settings()
+        if not getattr(s, "veriff_api_key", ""):
+            raise RuntimeError("VERIFF_API_KEY must be set for veriff")
+        raise NotImplementedError("Veriff not yet wired — set VERIFF_API_KEY")
+
+    def start_session(self, *, user_id: str, return_url: str) -> dict:  # noqa: ARG002
+        raise NotImplementedError
+
+    def evaluate(self, *, session_id: str) -> IdvResult:  # noqa: ARG002
+        raise NotImplementedError
+
+
+class OnfidoProvider:
+    name = "onfido"
+
+    def __init__(self) -> None:
+        s = get_settings()
+        if not getattr(s, "onfido_api_key", ""):
+            raise RuntimeError("ONFIDO_API_KEY must be set for onfido")
+        raise NotImplementedError("Onfido not yet wired — set ONFIDO_API_KEY")
 
     def start_session(self, *, user_id: str, return_url: str) -> dict:  # noqa: ARG002
         raise NotImplementedError
@@ -144,15 +179,21 @@ class StripeIdentityProvider:
 # Factory
 # ---------------------------------------------------------------------------
 
+_PROVIDERS = {
+    "persona": PersonaProvider,
+    "veriff": VeriffProvider,
+    "onfido": OnfidoProvider,
+}
+
 
 def get_provider() -> IdentityProvider:
     s = get_settings()
-    name = getattr(s, "identity_provider", "mock") or "mock"
-    name = name.lower()
-    if name == "stripe_identity":
-        try:
-            return StripeIdentityProvider()
-        except Exception:
-            logger.exception("falling back to mock identity provider")
-            return MockProvider()
-    return MockProvider()
+    name = (getattr(s, "identity_provider", "mock") or "mock").lower()
+    cls = _PROVIDERS.get(name)
+    if cls is None:
+        return MockProvider()
+    try:
+        return cls()
+    except Exception:
+        logger.exception("falling back to mock identity provider")
+        return MockProvider()

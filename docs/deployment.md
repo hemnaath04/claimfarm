@@ -122,24 +122,59 @@ provider's "When a message comes in" webhook to point at
 ## 5. Identity verification
 
 Default provider is `MockProvider` so the system runs end-to-end without
-a real KYC vendor. To switch:
+a real KYC vendor. Pick **one** of the three packaged providers
+(Stripe Identity is intentionally not bundled — it needs a US-incorporated
+Stripe account):
 
 ```bash
-# Stripe Identity
-IDENTITY_PROVIDER=stripe_identity
-STRIPE_SECRET_KEY=sk_live_...
+# Persona
+IDENTITY_PROVIDER=persona
+PERSONA_API_KEY=...
+
+# Veriff
+IDENTITY_PROVIDER=veriff
+VERIFF_API_KEY=...
+
+# Onfido
+IDENTITY_PROVIDER=onfido
+ONFIDO_API_KEY=...
 ```
 
-Wire other providers (Persona, Veriff, Onfido) by adding their subclass
-to `app/clients/identity_verification.py`.
+Each provider's subclass in `app/clients/identity_verification.py`
+currently raises `NotImplementedError` — flesh out `start_session` +
+`evaluate` with the vendor's SDK when you wire one in.
 
 ---
 
-## 6. Stripe payments
+## 6. Payments
 
-Stripe is in stub mode until `STRIPE_SECRET_KEY` is set. Add it plus
-`STRIPE_WEBHOOK_SECRET` and `STRIPE_GROWTH_PRICE_ID` to enable real
-billing. Webhook endpoint: `https://<fc-url>/api/billing/webhook`.
+`PAYMENTS_PROVIDER=none` keeps billing disabled and returns stub
+checkout sessions. When you're ready to charge for the Growth tier,
+pick a **merchant-of-record** provider (no US SSN / registered business
+required):
+
+```bash
+# Paddle — recommended for solo founders, handles VAT/sales tax worldwide
+PAYMENTS_PROVIDER=paddle
+PADDLE_API_KEY=pdl_live_...
+PADDLE_WEBHOOK_SECRET=...
+PADDLE_GROWTH_PRICE_ID=pri_...
+
+# LemonSqueezy — same MoR model, simpler onboarding for individuals
+PAYMENTS_PROVIDER=lemonsqueezy
+LEMONSQUEEZY_API_KEY=...
+LEMONSQUEEZY_WEBHOOK_SECRET=...
+LEMONSQUEEZY_GROWTH_VARIANT_ID=...
+
+# Razorpay — India / INR market
+PAYMENTS_PROVIDER=razorpay
+RAZORPAY_KEY_ID=...
+RAZORPAY_KEY_SECRET=...
+RAZORPAY_WEBHOOK_SECRET=...
+```
+
+Webhook endpoint: `https://<fc-url>/api/billing/webhook`. The route
+parses the provider-specific signature header automatically.
 
 ---
 

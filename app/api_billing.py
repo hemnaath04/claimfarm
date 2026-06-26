@@ -1,8 +1,12 @@
-"""Stripe billing API (checkout + webhook).
+"""Billing API (provider-agnostic checkout + webhook).
 
-Sit-this-out gracefully when Stripe is not configured: checkout returns
-a stub session; webhook accepts payloads and logs them. Real wiring
-lights up when STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET are set.
+The underlying provider is selectable via PAYMENTS_PROVIDER:
+- `none` (default) — checkout returns a stub, webhook just logs
+- `paddle` | `lemonsqueezy` | `razorpay` — wire when credentials land
+
+Stripe was intentionally removed because account creation requires a US
+SSN + registered business. Paddle and LemonSqueezy are merchant-of-record
+alternatives that work for solo / international founders.
 """
 
 from __future__ import annotations
@@ -13,7 +17,7 @@ from fastapi import APIRouter, HTTPException, Request
 
 from app.auth import tokens
 from app.auth.routes import SESSION_COOKIE
-from app.clients.stripe_client import PlanCode, create_checkout_session, parse_webhook
+from app.clients.payments import PlanCode, create_checkout_session, verify_webhook
 from app.config import get_settings
 from app.storage import users_repo
 from app.storage.audit_log import record as audit
@@ -60,20 +64,29 @@ def checkout(request: Request, plan: str = "growth") -> dict:
 
 @router.post("/webhook")
 async def webhook(request: Request) -> dict:
+    """Provider-neutral webhook entry point. The configured provider's
+    signature header (Paddle-Signature / X-Signature / x-razorpay-signature)
+    is forwarded into verify_webhook; the chosen adapter does the
+    actual HMAC check."""
     payload = await request.body()
-    signature = request.headers.get("stripe-signature", "")
+    signature = (
+        request.headers.get("paddle-signature")
+        or request.headers.get("x-signature")
+        or request.headers.get("x-razorpay-signature")
+        or ""
+    )
     try:
-        event = parse_webhook(payload=payload, signature=signature)
+        event = verify_webhook(payload=payload, signature=signature)
     except Exception as exc:  # noqa: BLE001
-        logger.warning("invalid stripe webhook: %s", exc)
+        logger.warning("invalid payments webhook: %s", exc)
         raise HTTPException(status_code=400, detail="invalid signature") from exc
 
     audit(
-        actor="stripe",
+        actor="payments_provider",
         action="billing.webhook",
-        target=event.get("id"),
-        metadata={"type": event.get("type")},
+        target=event.get("id") or event.get("event_id"),
+        metadata={"type": event.get("event_type") or event.get("type")},
     )
-    # TODO: handle checkout.session.completed, customer.subscription.updated,
-    # invoice.payment_failed, etc. For now we just log.
+    # TODO: route handler dispatch by event type (subscription.created,
+    # subscription.cancelled, payment.failed, …) once a provider is wired.
     return {"received": True}

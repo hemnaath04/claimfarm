@@ -101,11 +101,14 @@ On-demand localized farmer message for the claim's current status.
 ## Billing
 
 ### `POST /api/billing/checkout?plan=growth`
-Returns a Stripe Checkout session (or stub when Stripe is unconfigured).
+Returns a hosted-checkout session from the configured payments provider
+(Paddle / LemonSqueezy / Razorpay), or a stub when `PAYMENTS_PROVIDER=none`.
 
 ### `POST /api/billing/webhook`
-Stripe webhook receiver. Verifies signature when `STRIPE_WEBHOOK_SECRET`
-is set.
+Provider-agnostic webhook receiver. Reads the `Paddle-Signature`,
+`X-Signature`, or `x-razorpay-signature` header (whichever the
+configured provider sets) and verifies HMAC against the matching
+`*_WEBHOOK_SECRET`.
 
 ---
 

@@ -40,15 +40,25 @@ class Settings(BaseSettings):
     telegram_api_base: str = "https://api.telegram.org"
 
     # Identity verification (KYC + liveness)
-    identity_provider: str = "mock"  # mock | stripe_identity | persona | veriff | onfido
+    identity_provider: str = "mock"  # mock | persona | veriff | onfido
     persona_api_key: str = ""
     veriff_api_key: str = ""
     onfido_api_key: str = ""
 
-    # Stripe payments
-    stripe_secret_key: str = ""
-    stripe_webhook_secret: str = ""
-    stripe_growth_price_id: str = ""
+    # Payments — pick one (or leave 'none' to keep billing disabled).
+    # Stripe is intentionally not bundled because account creation needs a US
+    # SSN + registered business. Paddle and LemonSqueezy are merchant-of-record
+    # alternatives that work for solo / international founders.
+    payments_provider: str = "none"  # none | paddle | lemonsqueezy | razorpay
+    paddle_api_key: str = ""
+    paddle_webhook_secret: str = ""
+    paddle_growth_price_id: str = ""
+    lemonsqueezy_api_key: str = ""
+    lemonsqueezy_webhook_secret: str = ""
+    lemonsqueezy_growth_variant_id: str = ""
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
+    razorpay_webhook_secret: str = ""
 
     # Email / SMS / push transports (logged when unset)
     resend_api_key: str = ""

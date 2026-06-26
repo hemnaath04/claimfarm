@@ -14,7 +14,7 @@ been done.
 | **Public landing pages** (`/`, `/pricing`, `/about`, ...) | Public | Read-only; static rendering on Vercel; standard headers |
 | **Authenticated dashboard** (`/admin`, `/dashboard`) | Per-user | Server-side session cookie, role-gated API routes |
 | **JSON API** (`/api/*`) | Per-user (via cookie) | Rate-limited, role-gated where required, no-store responses |
-| **Channel webhooks** (`/telegram/inbound`, etc.) | Public but signed | Provider signature where available (Telegram secret token, Stripe sig) |
+| **Channel webhooks** (`/telegram/inbound`, etc.) | Public but signed | Provider signature where available (Telegram secret token, Paddle / LemonSqueezy / Razorpay HMAC) |
 | **Internal insurer** (`/insurer/*`) | Internal (loopback) | Mounted as sub-app; real deployments replace this with the carrier's API |
 
 ---
@@ -62,7 +62,7 @@ been done.
 - Brute-force protection via per-IP rate limiter
 
 ### A08: Software + data integrity failures
-- Stripe webhook signature verified in `parse_webhook` when `STRIPE_WEBHOOK_SECRET` is set
+- Payments webhook signature verified in `verify_webhook` against the configured provider's secret (Paddle / LemonSqueezy / Razorpay); skipped when `PAYMENTS_PROVIDER=none`
 - Telegram updates verified via the bot token in the path
 - Container images built reproducibly via GitHub Actions; deploys reference image by SHA, not `:latest`
 

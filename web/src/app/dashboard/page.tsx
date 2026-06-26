@@ -33,7 +33,7 @@ const NOTIFICATION_PREFS = [
   { key: "new_claim", label: "New claim filed", desc: "When a claim is filed via WhatsApp / Telegram" },
   { key: "fraud_flag", label: "Fraud flag raised", desc: "Block-level fraud signal on any claim" },
   { key: "weekly_summary", label: "Weekly summary", desc: "Roundup every Monday morning" },
-  { key: "billing", label: "Billing receipts", desc: "Stripe invoices + receipts" },
+  { key: "billing", label: "Billing receipts", desc: "Invoices and payment receipts" },
 ];
 
 export default function DashboardPage() {
@@ -150,7 +150,7 @@ export default function DashboardPage() {
                   No payment method on file. You won&apos;t be charged unless you upgrade.
                 </p>
                 <Button variant="outline" className="mt-4" disabled>
-                  Add card (Stripe Customer Portal — TODO)
+                  Add payment method (provider portal — wire when `PAYMENTS_PROVIDER` is set)
                 </Button>
               </CardContent>
             </Card>

@@ -58,8 +58,9 @@ export default function PrivacyPage() {
             We share claim data with your designated insurer for the sole purpose
             of filing claims. We use the following sub-processors: Alibaba Cloud
             (compute, storage, vector DB), Qwen Cloud (AI inference), Twilio /
-            Bird / Telegram (messaging), Stripe Identity / Persona / Veriff
-            (configurable identity verification), Stripe (payments). A current
+            Bird / Telegram (messaging), Persona / Veriff / Onfido
+            (configurable identity verification), Paddle / LemonSqueezy /
+            Razorpay (configurable payments). A current
             sub-processor list is maintained at /legal/subprocessors.
           </p>
 
