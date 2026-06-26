@@ -13,7 +13,18 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
+import httpx
+
+from app.config import get_settings
+
 logger = logging.getLogger(__name__)
+
+
+def email_transport_configured() -> bool:
+    """True when a real outbound provider is wired up. Auth endpoints
+    use this to decide whether to return verification URLs inline."""
+    s = get_settings()
+    return bool(s.resend_api_key or s.sendgrid_api_key)
 
 
 class Channel(str, Enum):
@@ -46,9 +57,57 @@ def render_template(template: str, vars: dict[str, Any]) -> str:
 
 
 def send_email(*, to: str, subject: str, body: str) -> NotificationResult:
-    # TODO: integrate Resend / SendGrid / SES when credentials are set.
+    s = get_settings()
+    if s.resend_api_key:
+        return _send_email_resend(to=to, subject=subject, body=body)
+    # Fall through to log-only so dev flows keep working without keys.
     logger.info("EMAIL→%s · %s · %s", to, subject, body[:120])
     return NotificationResult(channel=Channel.email, delivered=True, provider="log")
+
+
+def _send_email_resend(*, to: str, subject: str, body: str) -> NotificationResult:
+    """Send via Resend's REST API.
+
+    Resend's free tier is 100/day, 3 000/month, no business / SSN gate,
+    and the API is a single POST so we don't need their Python SDK. The
+    sender address must come from a verified domain — until the user
+    adds their own, ``onboarding@resend.dev`` works for any inbox.
+    """
+    s = get_settings()
+    try:
+        r = httpx.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {s.resend_api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": s.resend_from,
+                "to": [to],
+                "subject": subject,
+                # Keep newlines visible in the rendered email.
+                "html": body.replace("\n", "<br>"),
+                "text": body,
+            },
+            timeout=10.0,
+        )
+        if r.status_code >= 400:
+            logger.warning("resend: %s · %s", r.status_code, r.text[:300])
+            return NotificationResult(
+                channel=Channel.email,
+                delivered=False,
+                provider="resend",
+                detail=f"{r.status_code} {r.text[:200]}",
+            )
+        return NotificationResult(channel=Channel.email, delivered=True, provider="resend")
+    except httpx.HTTPError as exc:
+        logger.exception("resend transport failed")
+        return NotificationResult(
+            channel=Channel.email,
+            delivered=False,
+            provider="resend",
+            detail=str(exc),
+        )
 
 
 def send_sms(*, to: str, body: str) -> NotificationResult:

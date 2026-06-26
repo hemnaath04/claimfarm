@@ -7,32 +7,56 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { postAuthJson } from "@/lib/auth-fetch";
+
+const FRIENDLY: Record<number, string> = {
+  401: "Email or password didn't match. Try again or reset your password.",
+  403: "Your account is suspended. Contact support@claimfarm.dev.",
+  429: "Too many attempts. Wait a minute, then try again.",
+};
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [magicBusy, setMagicBusy] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
-      const r = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? ""}/auth/sign-in`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        },
-      );
-      if (!r.ok) throw new Error(`sign-in failed: ${r.status}`);
+      await postAuthJson("/auth/sign-in", { email, password });
       toast.success("Signed in — redirecting…");
       window.location.href = "/dashboard";
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "sign-in failed");
+      const e = err as { status?: number; detail?: string };
+      const message =
+        (e.status && FRIENDLY[e.status]) || e.detail || "Sign-in failed. Try again.";
+      toast.error(message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const sendMagicLink = async () => {
+    if (!email) {
+      toast.error("Enter your email above first.");
+      return;
+    }
+    setMagicBusy(true);
+    try {
+      const data = await postAuthJson<{ consume_url?: string }>("/auth/magic-link", { email });
+      if (data.consume_url) {
+        toast.success("Magic link ready — opening it now.");
+        window.location.href = data.consume_url;
+      } else {
+        toast.success("Magic link sent — check your inbox.");
+      }
+    } catch (err) {
+      const e = err as { detail?: string };
+      toast.error(e.detail ?? "Couldn't send magic link.");
+    } finally {
+      setMagicBusy(false);
     }
   };
 
@@ -90,14 +114,14 @@ export default function SignInPage() {
           <Separator className="flex-1" />
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="outline" disabled>
-            Google (TODO)
-          </Button>
-          <Button variant="outline" disabled>
-            Apple (TODO)
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          className="w-full"
+          disabled={magicBusy}
+          onClick={sendMagicLink}
+        >
+          {magicBusy ? "Sending magic link…" : "Email me a magic link"}
+        </Button>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           New here?{" "}

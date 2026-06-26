@@ -62,8 +62,15 @@ class Settings(BaseSettings):
 
     # Email / SMS / push transports (logged when unset)
     resend_api_key: str = ""
+    resend_from: str = "ClaimFarm <onboarding@resend.dev>"
     sendgrid_api_key: str = ""
     twilio_sms_from: str = ""
+
+    # When neither resend_api_key nor sendgrid_api_key is set, the auth
+    # endpoints include the verification / reset / magic-link URLs in
+    # their JSON response so the demo flow works without SMTP. Flip
+    # this off in production.
+    auth_dev_links: bool = True
 
     # Rate limiting
     rate_limit_per_minute: int = 60
@@ -72,6 +79,10 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite:///./claimfarm.sqlite"
     public_base_url: str = "http://localhost:8000"
+    # Web frontend root. Email-verify and magic-link consume redirect
+    # here after the backend marks the token spent so the user lands on
+    # the styled dashboard, not raw JSON.
+    frontend_base_url: str = "http://localhost:3000"
     log_level: str = "INFO"
 
 

@@ -6,6 +6,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { postAuthJson } from "@/lib/auth-fetch";
+
+const FRIENDLY: Record<number, string> = {
+  409: "That email is already registered. Try signing in instead.",
+  422: "Please double-check your email and password — they didn't look valid.",
+  429: "Too many sign-up attempts. Wait a minute and try again.",
+};
 
 export default function SignUpPage() {
   const [name, setName] = useState("");
@@ -13,25 +20,30 @@ export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [conflict, setConflict] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
+    setConflict(false);
     try {
-      const r = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? ""}/auth/sign-up`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, org, email, password }),
-        },
-      );
-      if (!r.ok) throw new Error(`sign-up failed: ${r.status}`);
-      toast.success("Account created — check your email to verify.");
-      window.location.href = "/auth/verify?sent=1";
+      const data = await postAuthJson<{
+        user_id: string;
+        verification_url?: string;
+      }>("/auth/sign-up", { name, org, email, password });
+      if (data.verification_url) {
+        toast.success("Account created — opening the verification link.");
+        window.location.href = data.verification_url;
+      } else {
+        toast.success("Account created — check your email to verify.");
+        window.location.href = "/auth/verify?sent=1";
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "sign-up failed");
+      const e = err as { status?: number; detail?: string };
+      if (e.status === 409) setConflict(true);
+      const message =
+        (e.status && FRIENDLY[e.status]) || e.detail || "Sign-up failed. Try again.";
+      toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -44,6 +56,20 @@ export default function SignUpPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Free for the first 100 filed claims. No card required.
         </p>
+
+        {conflict ? (
+          <div className="mt-4 rounded-md border border-amber-400/40 bg-amber-500/10 p-3 text-sm text-amber-100">
+            That email is already registered.{" "}
+            <Link href="/auth/sign-in" className="underline">
+              Sign in
+            </Link>{" "}
+            or{" "}
+            <Link href="/auth/reset" className="underline">
+              reset your password
+            </Link>
+            .
+          </div>
+        ) : null}
 
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">

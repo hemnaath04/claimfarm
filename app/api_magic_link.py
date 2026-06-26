@@ -16,6 +16,7 @@ import logging
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr
 
 from app import workers
@@ -63,9 +64,12 @@ def _issue_magic_link_token(user_id: str) -> str:
 def request_magic_link(payload: RequestPayload) -> dict:
     """Always returns 200 so attackers can't enumerate registered emails."""
     row = users_repo.get_by_email(payload.email)
+    body: dict[str, object] = {"ok": True}
+    settings = get_settings()
     if row is not None:
         token = _issue_magic_link_token(row.user_id)
-        base = get_settings().public_base_url.rstrip("/")
+        base = settings.public_base_url.rstrip("/")
+        consume_url = f"{base}/auth/magic-link/consume?token={token}"
         # Send off the request path — the user only needs the 200 ack.
         workers.submit(
             notifications.send_email,
@@ -73,22 +77,44 @@ def request_magic_link(payload: RequestPayload) -> dict:
             subject="Your ClaimFarm sign-in link",
             body=(
                 f"Click to sign in (expires in 15 minutes):\n"
-                f"{base}/auth/magic-link/consume?token={token}\n\n"
+                f"{consume_url}\n\n"
                 "If you did not request this, ignore the message."
             ),
         )
         audit(actor=row.user_id, action="auth.magic_link_requested")
-    return {"ok": True}
+        if settings.auth_dev_links and not notifications.email_transport_configured():
+            body["consume_url"] = consume_url
+    return body
 
 
 @router.get("/consume")
-def consume_magic_link(token: str, request: Request, response: Response) -> dict:
-    """Single-use. Sets a fresh session cookie + redirects to /dashboard."""
+def consume_magic_link(
+    token: str,
+    request: Request,
+    response: Response,
+    redirect: bool = True,
+):
+    """Single-use. Sets a fresh session cookie + redirects to /dashboard.
+
+    Browsers hitting the email link want to land on the dashboard, so
+    by default we issue a 303 to the frontend after redeeming. Tests +
+    integrations that prefer JSON can pass ``?redirect=false`` to get
+    back ``{"ok": true, "user_id": ...}`` instead.
+    """
+    fe = get_settings().frontend_base_url.rstrip("/")
     with Session(get_engine()) as s:
         row = s.get(OneTimeTokenRow, token)
         if row is None or row.purpose != "magic_link":
+            if redirect:
+                return RedirectResponse(
+                    url=f"{fe}/auth/sign-in?error=magic_invalid", status_code=303
+                )
             raise HTTPException(status_code=400, detail="invalid token")
         if row.consumed_at is not None or row.expires_at < _now():
+            if redirect:
+                return RedirectResponse(
+                    url=f"{fe}/auth/sign-in?error=magic_expired", status_code=303
+                )
             raise HTTPException(status_code=400, detail="token expired or used")
         row.consumed_at = _now()
         s.add(row)
@@ -97,6 +123,10 @@ def consume_magic_link(token: str, request: Request, response: Response) -> dict
 
     user = users_repo.get(user_id)
     if user is None or user.disabled:
+        if redirect:
+            return RedirectResponse(
+                url=f"{fe}/auth/sign-in?error=user_missing", status_code=303
+            )
         raise HTTPException(status_code=404, detail="user not found")
     # Magic-link traffic also counts as proof of inbox ownership — verify.
     if not user.email_verified:
@@ -108,6 +138,10 @@ def consume_magic_link(token: str, request: Request, response: Response) -> dict
         user_agent=request.headers.get("user-agent", "")[:255],
         ip=request.client.host if request.client else "",
     )
-    _set_session_cookie(response, session_token)
     audit(actor=user_id, action="auth.magic_link_consumed")
+    if redirect:
+        redirect_response = RedirectResponse(url=f"{fe}/dashboard", status_code=303)
+        _set_session_cookie(redirect_response, session_token)
+        return redirect_response
+    _set_session_cookie(response, session_token)
     return {"ok": True, "user_id": user_id}

@@ -82,6 +82,7 @@ def sign_up(payload: SignUpPayload, request: Request, response: Response) -> dic
     verify_token = tokens.issue_email_verification_token(user_id)
     settings = get_settings()
     base = settings.public_base_url.rstrip("/")
+    verification_url = f"{base}/auth/verify?token={verify_token}"
     workers.submit(
         notifications.send,
         kind="welcome",
@@ -89,7 +90,7 @@ def sign_up(payload: SignUpPayload, request: Request, response: Response) -> dic
         email=payload.email,
         vars={
             "name": payload.name or "there",
-            "verification_url": f"{base}/auth/verify?token={verify_token}",
+            "verification_url": verification_url,
         },
     )
 
@@ -104,7 +105,16 @@ def sign_up(payload: SignUpPayload, request: Request, response: Response) -> dic
         user_id, user_agent=request.headers.get("user-agent", "")[:255], ip=request.client.host if request.client else ""
     )
     _set_session_cookie(response, session_token)
-    return {"user_id": user_id, "session": session_token, "verification_email_sent": True}
+    body: dict[str, object] = {
+        "user_id": user_id,
+        "session": session_token,
+        "verification_email_sent": notifications.email_transport_configured(),
+    }
+    # When no email transport is wired up, hand the verification link
+    # back so the demo flow doesn't deadlock at "check your inbox".
+    if settings.auth_dev_links and not notifications.email_transport_configured():
+        body["verification_url"] = verification_url
+    return body
 
 
 @router.post("/sign-in")
@@ -143,17 +153,22 @@ def sign_out(request: Request, response: Response) -> dict:
 def reset_request(payload: ResetRequestPayload) -> dict:
     """Always returns OK to avoid leaking which emails are registered."""
     row = users_repo.get_by_email(payload.email)
+    body: dict[str, object] = {"ok": True}
+    settings = get_settings()
     if row is not None:
         token = tokens.issue_password_reset_token(row.user_id)
-        base = get_settings().public_base_url.rstrip("/")
+        base = settings.public_base_url.rstrip("/")
+        reset_url = f"{base}/auth/reset/confirm?token={token}"
         workers.submit(
             notifications.send_email,
             to=row.email,
             subject="Reset your ClaimFarm password",
-            body=f"Click this link to reset (expires in 1h):\n{base}/auth/reset/confirm?token={token}",
+            body=f"Click this link to reset (expires in 1h):\n{reset_url}",
         )
         audit(actor=row.user_id, action="user.reset_requested")
-    return {"ok": True}
+        if settings.auth_dev_links and not notifications.email_transport_configured():
+            body["reset_url"] = reset_url
+    return body
 
 
 @router.post("/reset/confirm")
@@ -172,17 +187,28 @@ def reset_confirm(payload: ConfirmResetPayload, response: Response) -> dict:
 
 
 @router.get("/verify")
-def verify_email(token: str) -> dict:
+def verify_email(token: str):
+    """Mark the email verified + redirect to the dashboard.
+
+    Returning a redirect (rather than JSON) is what makes "click the
+    link in your email" actually feel like a normal verify flow — the
+    user lands on the styled dashboard instead of a raw `{ok: true}`.
+    On failure we still redirect, but with a `?error=` query the
+    frontend renders as inline status.
+    """
+    from fastapi.responses import RedirectResponse
+
+    fe = get_settings().frontend_base_url.rstrip("/")
     user_id = tokens.redeem_email_verification_token(token)
     if user_id is None:
-        raise HTTPException(status_code=400, detail="invalid or expired token")
+        return RedirectResponse(url=f"{fe}/auth/verify?error=expired", status_code=303)
     row = users_repo.get(user_id)
     if row is None:
-        raise HTTPException(status_code=404, detail="user not found")
+        return RedirectResponse(url=f"{fe}/auth/verify?error=unknown", status_code=303)
     row.email_verified = True
     users_repo.upsert(row)
     audit(actor=user_id, action="user.email_verified")
-    return {"ok": True, "user_id": user_id}
+    return RedirectResponse(url=f"{fe}/auth/verify?status=ok", status_code=303)
 
 
 @router.get("/me")

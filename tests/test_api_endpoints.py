@@ -124,7 +124,7 @@ def test_magic_link_consume_signs_in(client: TestClient) -> None:
     assert user is not None
     token = _issue_magic_link_token(user.user_id)
 
-    consumed = client.get(f"/auth/magic-link/consume?token={token}")
+    consumed = client.get(f"/auth/magic-link/consume?token={token}&redirect=false")
     assert consumed.status_code == 200, consumed.text
     assert consumed.json()["user_id"] == user.user_id
 
@@ -133,5 +133,5 @@ def test_magic_link_consume_signs_in(client: TestClient) -> None:
     assert me.status_code == 200, me.text
 
     # Single-use: the same token must not redeem again.
-    again = client.get(f"/auth/magic-link/consume?token={token}")
+    again = client.get(f"/auth/magic-link/consume?token={token}&redirect=false")
     assert again.status_code == 400
