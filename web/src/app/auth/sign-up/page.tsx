@@ -22,6 +22,7 @@ export default function SignUpPage() {
         `${process.env.NEXT_PUBLIC_API_URL ?? ""}/auth/sign-up`,
         {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, org, email, password }),
         },

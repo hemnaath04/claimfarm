@@ -179,12 +179,33 @@ def post_decision(claim_id: str, body: DecisionPayload) -> dict[str, Any]:
 
 
 def install_api(app) -> None:
-    """Attach the router and a permissive CORS policy to the given FastAPI app."""
+    """Attach the router and CORS policy to the given FastAPI app.
+
+    CORS is credentialed (session cookies + Bearer keys both ride on the
+    same browser request), so we must enumerate exact origins — ``*`` +
+    ``allow_credentials=True`` is rejected by the CORS spec. Origins come
+    from ``CORS_ALLOWED_ORIGINS`` (comma-separated) with sane defaults
+    covering local dev + the deployed Vercel surface.
+    """
+    import os as _os
+
+    raw = _os.environ.get("CORS_ALLOWED_ORIGINS", "").strip()
+    if raw:
+        origins = [o.strip() for o in raw.split(",") if o.strip()]
+    else:
+        origins = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "https://claimfarm-dashboard.vercel.app",
+        ]
+
     app.include_router(router)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=False,
+        allow_origins=origins,
+        # Preview deploys land on *.vercel.app subdomains; allow them all.
+        allow_origin_regex=r"https://claimfarm-dashboard(-[a-z0-9-]+)?\.vercel\.app",
+        allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )

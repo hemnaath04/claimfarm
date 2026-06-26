@@ -17,19 +17,18 @@ export default function SignInPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      // POSTs to the backend /auth/sign-in route. Backend is placeholder
-      // and currently returns 200 with a stub session.
       const r = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL ?? ""}/auth/sign-in`,
         {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         },
       );
       if (!r.ok) throw new Error(`sign-in failed: ${r.status}`);
-      toast.success("Signed in (stub) — redirecting…");
-      window.location.href = "/admin";
+      toast.success("Signed in — redirecting…");
+      window.location.href = "/dashboard";
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "sign-in failed");
     } finally {
