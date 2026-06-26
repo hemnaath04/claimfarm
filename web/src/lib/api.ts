@@ -159,3 +159,57 @@ export async function postDecision(
   }
   return r.json();
 }
+
+// ---------- API keys (cookie-authenticated) ----------
+
+export type ApiKeySummary = {
+  key_id: string;
+  name: string;
+  scope: string;
+  created_at: string | null;
+  last_used_at: string | null;
+  expires_at: string | null;
+  revoked_at: string | null;
+};
+
+export type IssuedApiKey = ApiKeySummary & {
+  secret: string;
+};
+
+export async function listApiKeys(): Promise<ApiKeySummary[]> {
+  const r = await fetch(`${API_BASE}/api/keys`, {
+    cache: "no-store",
+    credentials: "include",
+  });
+  if (r.status === 401) throw new Error("unauthorized");
+  if (!r.ok) throw new Error(`list keys failed: ${r.status}`);
+  const data = (await r.json()) as { items: ApiKeySummary[] };
+  return data.items;
+}
+
+export async function issueApiKey(
+  name: string,
+  scope: string = "claims:read",
+): Promise<IssuedApiKey> {
+  const r = await fetch(`${API_BASE}/api/keys`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, scope }),
+  });
+  if (r.status === 401) throw new Error("unauthorized");
+  if (!r.ok) {
+    const err = await r.text();
+    throw new Error(`issue key failed: ${err}`);
+  }
+  return r.json();
+}
+
+export async function revokeApiKey(keyId: string): Promise<void> {
+  const r = await fetch(`${API_BASE}/api/keys/${encodeURIComponent(keyId)}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (r.status === 401) throw new Error("unauthorized");
+  if (!r.ok) throw new Error(`revoke failed: ${r.status}`);
+}

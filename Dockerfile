@@ -47,6 +47,13 @@ ENV PATH="/app/.venv/bin:${PATH}" \
     CHROMA_PATH=/tmp/.chroma \
     PUBLIC_BASE_URL=http://localhost:9000
 
+# Drop root: run uvicorn as an unprivileged user. /tmp stays world-writable
+# (SQLite + Chroma + Bird payload logs all land there in the FC runtime).
+RUN groupadd --system --gid 10001 claimfarm \
+    && useradd  --system --uid 10001 --gid claimfarm --home-dir /app --no-create-home claimfarm \
+    && chown -R claimfarm:claimfarm /app
+USER claimfarm:claimfarm
+
 EXPOSE 9000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s \

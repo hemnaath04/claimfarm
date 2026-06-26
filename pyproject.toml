@@ -23,6 +23,8 @@ dependencies = [
     "sqlmodel>=0.0.22",
     "python-dotenv>=1.0",
     "chromadb>=1.5.9",
+    "argon2-cffi>=25.1.0",
+    "structlog>=26.1.0",
 ]
 
 [project.optional-dependencies]

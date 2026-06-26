@@ -5,14 +5,27 @@ from pathlib import Path
 
 from fastapi import BackgroundTasks, FastAPI, Form, Request, Response
 
-from app import api_admin, api_billing, api_claims, api_identity
+from app import (
+    api_admin,
+    api_billing,
+    api_claims,
+    api_gdpr,
+    api_identity,
+    api_keys_routes,
+    api_magic_link,
+    logging_setup,
+)
 from app.agents import whatsapp_intake
 from app.auth.routes import router as auth_router
 from app.config import get_settings
 from app.middlewares import IPRateLimiter, SecurityHeaders
 from app.models.claim import Claim
+from app.observability import init_sentry
 from app.storage import claims_repo
 from mock_insurer.main import app as mock_insurer_app
+
+logging_setup.configure(level=get_settings().log_level)
+init_sentry()
 
 logger = logging.getLogger(__name__)
 
@@ -57,11 +70,14 @@ app.mount("/insurer", mock_insurer_app)
 # Adjuster JSON API consumed by the Next.js dashboard (web/).
 api_claims.install_api(app)
 
-# Auth + identity + billing + admin sub-APIs.
+# Auth + identity + billing + admin + GDPR + API-keys + magic-link sub-APIs.
 app.include_router(auth_router)
+app.include_router(api_magic_link.router)
 app.include_router(api_identity.router)
 app.include_router(api_billing.router)
 app.include_router(api_admin.router)
+app.include_router(api_gdpr.router)
+app.include_router(api_keys_routes.router)
 
 # Cross-cutting middleware (registration order matters — last wraps first).
 app.add_middleware(SecurityHeaders)

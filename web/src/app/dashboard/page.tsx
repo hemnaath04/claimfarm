@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,6 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { SiteHeader } from "@/components/marketing/site-header";
+import {
+  ApiKeySummary,
+  IssuedApiKey,
+  issueApiKey,
+  listApiKeys,
+  revokeApiKey,
+} from "@/lib/api";
 
 // NOTE: this dashboard is wired to placeholder data. When real auth lands,
 // the org and user state should be fetched server-side from the FastAPI
@@ -19,9 +26,211 @@ const ORG = {
   plan: "Pilot",
   utilization: 23, // claims this month
   cap: 100,
-  apiKey: "cf_live_pl_•••••••••3a7b",
   webhookSecret: "whsec_•••••••••a91c",
 };
+
+const SCOPES = [
+  { value: "claims:read", label: "Read claims" },
+  { value: "claims:write", label: "Read + file claims" },
+  { value: "admin", label: "Full admin" },
+] as const;
+
+function fmtDate(iso: string | null): string {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function ApiKeysPanel() {
+  const [keys, setKeys] = useState<ApiKeySummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [name, setName] = useState("");
+  const [scope, setScope] = useState<string>("claims:read");
+  const [issuing, setIssuing] = useState(false);
+  const [justIssued, setJustIssued] = useState<IssuedApiKey | null>(null);
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setKeys(await listApiKeys());
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg === "unauthorized" ? "Sign in to manage API keys." : msg);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  async function handleIssue() {
+    setIssuing(true);
+    try {
+      const issued = await issueApiKey(name.trim() || "untitled", scope);
+      setJustIssued(issued);
+      setName("");
+      setScope("claims:read");
+      toast.success("Key issued. Copy the secret now — it won't be shown again.");
+      await reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to issue key");
+    } finally {
+      setIssuing(false);
+    }
+  }
+
+  async function handleRevoke(keyId: string) {
+    if (!confirm(`Revoke ${keyId}? Any integration using this key will break.`)) return;
+    try {
+      await revokeApiKey(keyId);
+      toast.success("Key revoked");
+      await reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Revoke failed");
+    }
+  }
+
+  return (
+    <Card className="glass">
+      <CardContent className="p-6">
+        <div className="flex items-baseline justify-between">
+          <h3 className="font-semibold">API keys</h3>
+          <span className="text-xs text-muted-foreground">
+            Send <code className="font-mono">Authorization: Bearer cf_live_…</code> to the API.
+          </span>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-12 gap-2">
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="What is this key for? (e.g. insurer integration)"
+            className="bg-card/40 md:col-span-6"
+          />
+          <select
+            value={scope}
+            onChange={(e) => setScope(e.target.value)}
+            className="md:col-span-4 bg-card/40 border border-border/60 rounded-md px-3 text-sm h-9"
+          >
+            {SCOPES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <Button
+            onClick={handleIssue}
+            disabled={issuing}
+            className="md:col-span-2 bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {issuing ? "Issuing…" : "Issue key"}
+          </Button>
+        </div>
+
+        {justIssued ? (
+          <div className="mt-4 rounded-md border border-primary/40 bg-primary/5 p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-semibold">
+                New key — copy now, it won&apos;t be shown again
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(justIssued.secret);
+                  toast.success("Secret copied to clipboard");
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+            <code className="block mt-3 font-mono text-xs break-all bg-background/60 px-3 py-2 rounded-md">
+              {justIssued.secret}
+            </code>
+            <div className="mt-2 text-xs text-muted-foreground">
+              key id <span className="mono-id">{justIssued.key_id}</span> · scope{" "}
+              <span className="mono-id">{justIssued.scope}</span>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="mt-3"
+              onClick={() => setJustIssued(null)}
+            >
+              I&apos;ve copied it — dismiss
+            </Button>
+          </div>
+        ) : null}
+
+        <div className="mt-6">
+          {loading ? (
+            <div className="text-sm text-muted-foreground">Loading keys…</div>
+          ) : error ? (
+            <div className="text-sm text-amber-200">{error}</div>
+          ) : keys.length === 0 ? (
+            <div className="text-sm text-muted-foreground">
+              No API keys yet. Issue one above to start calling the ClaimFarm API.
+            </div>
+          ) : (
+            <ul className="divide-y divide-border/40">
+              {keys.map((k) => {
+                const isRevoked = k.revoked_at !== null;
+                return (
+                  <li
+                    key={k.key_id}
+                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 py-3"
+                  >
+                    <div>
+                      <div className="font-medium flex items-center gap-2">
+                        {k.name || <span className="text-muted-foreground">untitled</span>}
+                        <Badge variant="outline" className="text-xs">
+                          {k.scope}
+                        </Badge>
+                        {isRevoked ? (
+                          <Badge className="bg-red-500/10 border-red-500/40 text-red-200 text-xs">
+                            revoked
+                          </Badge>
+                        ) : null}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5 mono-id">
+                        {k.key_id} · created {fmtDate(k.created_at)} · last used{" "}
+                        {fmtDate(k.last_used_at)}
+                      </div>
+                    </div>
+                    {!isRevoked ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-400/40 text-red-200 hover:bg-red-500/10"
+                        onClick={() => handleRevoke(k.key_id)}
+                      >
+                        Revoke
+                      </Button>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 const TEAM = [
   { name: "Hemnaath B.", email: "you@org.org", role: "Owner" },
@@ -190,23 +399,7 @@ export default function DashboardPage() {
           </TabsContent>
 
           <TabsContent value="api" className="space-y-4 mt-6">
-            <Card className="glass">
-              <CardContent className="p-6">
-                <h3 className="font-semibold">API key</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Use this key in the <code className="font-mono text-xs bg-muted/40 px-1.5 py-0.5 rounded">Authorization: Bearer</code> header when calling the ClaimFarm API.
-                </p>
-                <div className="mt-4 flex items-center gap-2">
-                  <code className="flex-1 font-mono text-xs bg-muted/30 px-3 py-2 rounded-md">{ORG.apiKey}</code>
-                  <Button variant="outline" onClick={() => toast.message("Reveal full key (TODO)")}>
-                    Reveal
-                  </Button>
-                  <Button variant="outline" onClick={() => toast.success("New key generated (TODO)")}>
-                    Rotate
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <ApiKeysPanel />
 
             <Card className="glass">
               <CardContent className="p-6">

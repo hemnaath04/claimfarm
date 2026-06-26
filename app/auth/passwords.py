@@ -1,8 +1,8 @@
-"""Password hashing helpers.
+"""Password hashing.
 
-Uses PBKDF2-HMAC-SHA256 from the stdlib so we don't take on a hard
-dependency until Argon2id is wired in. Production deployments should
-swap to Argon2id (`argon2-cffi`) and rehash on next login.
+Default: Argon2id (OWASP 2023 recommendation), provided by argon2-cffi.
+Legacy PBKDF2-SHA256 hashes from earlier accounts are still verified +
+transparently rehashed to Argon2id on the next successful sign-in.
 """
 
 from __future__ import annotations
@@ -10,25 +10,46 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
-import os
 
-# 600,000 iterations (PBKDF2-SHA256) ≈ OWASP 2023 recommendation.
-_ITERATIONS = 600_000
-_SALT_BYTES = 16
-_KEY_BYTES = 32
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
+
+# Argon2id parameters tuned for ~250ms on a modern laptop. OWASP 2023:
+# m=64 MiB, t=3, p=4.
+_ph = PasswordHasher(time_cost=3, memory_cost=64 * 1024, parallelism=4, hash_len=32, salt_len=16)
 
 
 def hash_password(plain: str) -> str:
-    """Return a compact 'algo$iter$salt$hash' string."""
-    salt = os.urandom(_SALT_BYTES)
-    digest = hashlib.pbkdf2_hmac("sha256", plain.encode("utf-8"), salt, _ITERATIONS, _KEY_BYTES)
-    return (
-        f"pbkdf2-sha256${_ITERATIONS}${base64.b64encode(salt).decode()}$"
-        f"{base64.b64encode(digest).decode()}"
-    )
+    """Hash with Argon2id. Output starts with `$argon2id$…`."""
+    return _ph.hash(plain)
 
 
 def verify_password(plain: str, encoded: str) -> bool:
+    """Verify against either Argon2id or legacy PBKDF2-SHA256 hashes."""
+    if encoded.startswith("$argon2"):
+        try:
+            return _ph.verify(encoded, plain)
+        except (VerifyMismatchError, VerificationError, InvalidHashError):
+            return False
+    if encoded.startswith("pbkdf2-sha256$"):
+        return _verify_pbkdf2(plain, encoded)
+    return False
+
+
+def needs_rehash(encoded: str) -> bool:
+    """True when the stored hash should be upgraded on next successful login."""
+    if not encoded.startswith("$argon2"):
+        return True
+    try:
+        return _ph.check_needs_rehash(encoded)
+    except InvalidHashError:
+        return True
+
+
+# --- Legacy PBKDF2 (kept for accounts created before the Argon2id upgrade) ---
+
+
+def _verify_pbkdf2(plain: str, encoded: str) -> bool:
     try:
         algo, iter_str, salt_b64, hash_b64 = encoded.split("$")
     except ValueError:

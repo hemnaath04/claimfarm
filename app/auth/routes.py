@@ -8,6 +8,7 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr, Field
 
+from app import workers
 from app.auth import passwords, tokens
 from app.clients import notifications
 from app.config import get_settings
@@ -81,7 +82,8 @@ def sign_up(payload: SignUpPayload, request: Request, response: Response) -> dic
     verify_token = tokens.issue_email_verification_token(user_id)
     settings = get_settings()
     base = settings.public_base_url.rstrip("/")
-    notifications.send(
+    workers.submit(
+        notifications.send,
         kind="welcome",
         user_id=user_id,
         email=payload.email,
@@ -113,6 +115,11 @@ def sign_in(payload: SignInPayload, request: Request, response: Response) -> dic
     if not passwords.verify_password(payload.password, row.password_hash):
         raise HTTPException(status_code=401, detail="invalid credentials")
 
+    # Transparently upgrade legacy PBKDF2 hashes to Argon2id on successful sign-in.
+    if passwords.needs_rehash(row.password_hash):
+        row.password_hash = passwords.hash_password(payload.password)
+        users_repo.upsert(row)
+
     users_repo.update_last_seen(row.user_id)
     session_token = tokens.create_session(
         row.user_id,
@@ -139,7 +146,8 @@ def reset_request(payload: ResetRequestPayload) -> dict:
     if row is not None:
         token = tokens.issue_password_reset_token(row.user_id)
         base = get_settings().public_base_url.rstrip("/")
-        notifications.send_email(
+        workers.submit(
+            notifications.send_email,
             to=row.email,
             subject="Reset your ClaimFarm password",
             body=f"Click this link to reset (expires in 1h):\n{base}/auth/reset/confirm?token={token}",
