@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { useAuthUser } from "@/lib/user-state";
 
 const NAV = [
   { href: "/", label: "Home" },
@@ -15,12 +15,21 @@ const NAV = [
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const user = useAuthUser();
+
   return (
     <header className="border-b border-border/40 bg-background/70 backdrop-blur-md sticky top-0 z-30">
       <div className="max-w-[1280px] mx-auto px-6 py-3 flex items-center gap-6">
-        <Link href="/" className="flex items-center gap-1.5 font-bold tracking-tight">
-          <span>claim</span>
-          <span className="neon-text">farm</span>
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-bold tracking-tight"
+        >
+          <span
+            className="brand-mark"
+            aria-hidden
+            style={{ width: 24, height: 24, borderRadius: 6 }}
+          />
+          <span className="text-[16px]">claimfarm</span>
         </Link>
         <nav className="hidden md:flex items-center gap-1 ml-4">
           {NAV.map((item) => {
@@ -41,17 +50,36 @@ export function SiteHeader() {
           })}
         </nav>
         <div className="ml-auto flex items-center gap-2">
-          <Link
-            href="/auth/sign-in"
-            className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5"
-          >
-            Sign in
-          </Link>
-          <Link href="/auth/sign-up">
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-              Start free
-            </Button>
-          </Link>
+          {user === null ? (
+            <div className="h-9 w-24 rounded-md bg-white/5 animate-pulse" aria-hidden />
+          ) : user ? (
+            <>
+              <span className="hidden md:inline text-[12px] text-[#8B95A5]">
+                {user.email}
+              </span>
+              <Link
+                href="/dashboard"
+                className="btn-gradient h-9 px-4 text-[13px] inline-flex items-center"
+              >
+                Open dashboard
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/auth/sign-in"
+                className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/auth/sign-up"
+                className="btn-gradient h-9 px-4 text-[13px] inline-flex items-center"
+              >
+                Start free
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

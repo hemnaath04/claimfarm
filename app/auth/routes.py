@@ -46,14 +46,25 @@ class ConfirmResetPayload(BaseModel):
 
 
 def _set_session_cookie(response: Response, token: str) -> None:
+    """Issue the session cookie.
+
+    Cross-site flag matters: in production the Next.js frontend lives on
+    *.vercel.app and the FastAPI backend on a different host (FC or the
+    cloudflared tunnel), so the session cookie must be allowed on
+    cross-site fetch() calls — that means ``SameSite=None`` + ``Secure``.
+    SameSite=None requires Secure to be true, which we get from HTTPS.
+    On localhost (HTTP, same eTLD+1) we keep Lax so the dev flow doesn't
+    require HTTPS.
+    """
     s = get_settings()
+    is_https = s.public_base_url.startswith("https://")
     response.set_cookie(
         SESSION_COOKIE,
         token,
         max_age=60 * 60 * 24 * 30,
         httponly=True,
-        secure=s.public_base_url.startswith("https://"),
-        samesite="lax",
+        secure=is_https,
+        samesite="none" if is_https else "lax",
         path="/",
     )
 

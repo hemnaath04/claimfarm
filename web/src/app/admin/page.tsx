@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -140,26 +141,33 @@ export default function DashboardPage() {
   const claim = detail?.claim;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-20">
-        <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold tracking-tight">claim</span>
-            <span className="text-lg font-bold tracking-tight neon-text">farm</span>
-          </div>
-          <div className="text-sm text-muted-foreground">Adjuster Console</div>
-          <div className="ml-auto flex items-center gap-2">
-            <Badge variant="outline" className="border-emerald-400/30 text-emerald-300">
-              ● Live
-            </Badge>
-            <Button variant="outline" size="sm" onClick={() => loadQueue()}>
-              Refresh
-            </Button>
-          </div>
+    <AppShell>
+      <div className="max-w-[1400px] w-full mx-auto px-6 pt-6 pb-3 flex items-center justify-between">
+        <div>
+          <div className="eyebrow-mono">adjuster console</div>
+          <h1 className="mt-1 text-[22px] font-bold text-[#F8FAFC]">
+            Triage queue
+          </h1>
         </div>
-      </header>
+        <div className="flex items-center gap-2">
+          <Badge
+            variant="outline"
+            className="border-emerald-400/30 text-emerald-300"
+          >
+            ● Live
+          </Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => loadQueue()}
+            className="border-white/10 text-[#F8FAFC] hover:bg-white/5"
+          >
+            Refresh
+          </Button>
+        </div>
+      </div>
 
-      <main className="flex-1 max-w-[1400px] w-full mx-auto px-6 py-6 grid grid-cols-[340px_1fr] gap-6">
+      <div className="max-w-[1400px] w-full mx-auto px-6 pb-12 grid grid-cols-[340px_1fr] gap-6">
         {/* LEFT: queue + stats */}
         <aside className="space-y-4">
           <div className="grid grid-cols-2 gap-2">
@@ -519,7 +527,7 @@ export default function DashboardPage() {
             </>
           )}
         </section>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }
