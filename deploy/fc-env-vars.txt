@@ -53,8 +53,11 @@ CORS_ALLOWED_ORIGINS=https://claimfarm-dashboard.vercel.app,http://localhost:300
 # ---------- Email transport (optional) ----------
 # Leave RESEND_API_KEY blank to keep dev-mode click-through links in
 # the JSON response. Set it to enable real email delivery via Resend.
+# Branded HTML emails (verify/reset/magic-link/invite/claim-PDF) send through
+# this. Use a verified-domain sender; RESEND_REPLY_TO improves deliverability.
 RESEND_API_KEY=
-RESEND_FROM=ClaimFarm <onboarding@resend.dev>
+RESEND_FROM=ClaimFarm <noreply@hemnaath.tech>
+RESEND_REPLY_TO=help@hemnaath.tech
 
 # ---------- Worker tuning (optional, defaults shown) ----------
 JOB_BACKEND=thread
