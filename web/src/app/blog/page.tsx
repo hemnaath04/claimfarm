@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { ArrowUpRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
@@ -47,45 +48,61 @@ const POSTS = [
 
 export default function BlogIndex() {
   return (
-    <>
+    <div className="flex min-h-dvh flex-col">
       <SiteHeader />
-      <main className="max-w-[1080px] mx-auto px-6 pt-20 pb-16">
-        <div className="text-xs font-semibold uppercase tracking-wider text-primary">Blog</div>
-        <h1 className="mt-3 text-4xl md:text-5xl font-bold tracking-tight">
-          Notes from the build.
-        </h1>
-        <p className="mt-4 text-muted-foreground max-w-2xl">
-          Engineering and product writing about how ClaimFarm works, what we
-          measure, and what we've learned shipping AI agents into the
-          insurance loop.
-        </p>
+      <main className="flex-1">
+        {/* Editorial intro on a harvest band */}
+        <section className="vl-harvest">
+          <div className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
+            <p className="vl-eyebrow text-forest-deep">Blog</p>
+            <h1 className="vl-display mt-3 max-w-3xl">Notes from the build.</h1>
+            <p className="mt-5 max-w-2xl text-lg leading-7 text-forest-deep/80">
+              Engineering and product writing about how ClaimFarm works, what we
+              measure, and what we&apos;ve learned shipping AI agents into the
+              insurance loop.
+            </p>
+          </div>
+        </section>
 
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {POSTS.map((p) => (
-            <Link key={p.slug} href={`/blog/${p.slug}`}>
-              <Card className="glass hover:ring-1 hover:ring-primary/40 transition cursor-pointer h-full">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3 text-xs">
-                    <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                      {p.tag}
+        <section className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            {POSTS.map((p) => (
+              <Link
+                key={p.slug}
+                href={`/blog/${p.slug}`}
+                className="group block min-w-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              >
+                <Card className="h-full border border-border bg-card vl-shadow-card transition-shadow hover:vl-shadow-raised">
+                  <CardContent className="flex h-full flex-col p-6">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                      <span className="rounded-full bg-forest/10 px-2.5 py-0.5 font-semibold text-forest">
+                        {p.tag}
+                      </span>
+                      <span className="text-muted-foreground">{p.readingTime}</span>
+                      <span aria-hidden className="text-muted-foreground">·</span>
+                      <span className="text-muted-foreground">{p.date}</span>
+                    </div>
+                    <h2 className="mt-4 text-xl font-semibold leading-snug tracking-tight text-card-foreground">
+                      {p.title}
+                    </h2>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      {p.excerpt}
+                    </p>
+                    <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-forest">
+                      Read note
+                      <ArrowUpRight
+                        aria-hidden
+                        className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                      />
                     </span>
-                    <span className="text-muted-foreground">{p.readingTime}</span>
-                    <span className="text-muted-foreground">·</span>
-                    <span className="text-muted-foreground">{p.date}</span>
-                  </div>
-                  <h3 className="mt-3 text-lg font-semibold leading-snug">
-                    {p.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                    {p.excerpt}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
       </main>
       <SiteFooter />
-    </>
+    </div>
   );
 }

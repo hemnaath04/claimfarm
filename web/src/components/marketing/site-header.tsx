@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
+import { ClaimFarmLogo } from "@/components/brand/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuthUser } from "@/lib/user-state";
 
 const NAV = [
@@ -16,32 +20,25 @@ const NAV = [
 export function SiteHeader() {
   const pathname = usePathname();
   const user = useAuthUser();
+  const [open, setOpen] = useState(false);
 
   return (
-    <header className="border-b border-border/40 bg-background/70 backdrop-blur-md sticky top-0 z-30">
-      <div className="max-w-[1280px] mx-auto px-6 py-3 flex items-center gap-6">
-        <Link
-          href="/"
-          className="flex items-center gap-2 font-bold tracking-tight"
-        >
-          <span
-            className="brand-mark"
-            aria-hidden
-            style={{ width: 24, height: 24, borderRadius: 6 }}
-          />
-          <span className="text-[16px]">claimfarm</span>
-        </Link>
-        <nav className="hidden md:flex items-center gap-1 ml-4">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-6 px-5 sm:px-8">
+        <ClaimFarmLogo size={30} />
+
+        <nav className="ml-2 hidden items-center gap-1 md:flex" aria-label="Primary">
           {NAV.map((item) => {
             const active = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`px-3 py-1.5 rounded-md text-sm transition ${
+                aria-current={active ? "page" : undefined}
+                className={`rounded-md px-3 py-2 text-sm transition-colors ${
                   active
-                    ? "text-foreground bg-muted/50"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                    ? "bg-muted font-medium text-foreground"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                 }`}
               >
                 {item.label}
@@ -49,39 +46,82 @@ export function SiteHeader() {
             );
           })}
         </nav>
+
         <div className="ml-auto flex items-center gap-2">
+          <ThemeToggle className="hidden sm:inline-grid" />
           {user === null ? (
-            <div className="h-9 w-24 rounded-md bg-white/5 animate-pulse" aria-hidden />
+            <div
+              className="h-9 w-24 animate-pulse rounded-lg bg-muted"
+              aria-hidden
+            />
           ) : user ? (
-            <>
-              <span className="hidden md:inline text-[12px] text-[#8B95A5]">
-                {user.email}
-              </span>
-              <Link
-                href="/dashboard"
-                className="btn-gradient h-9 px-4 text-[13px] inline-flex items-center"
-              >
-                Open dashboard
-              </Link>
-            </>
+            <Link
+              href="/dashboard"
+              className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Open dashboard
+            </Link>
           ) : (
             <>
               <Link
                 href="/auth/sign-in"
-                className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5"
+                className="hidden rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
               >
                 Sign in
               </Link>
               <Link
                 href="/auth/sign-up"
-                className="btn-gradient h-9 px-4 text-[13px] inline-flex items-center"
+                className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 Start free
               </Link>
             </>
           )}
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            className="inline-grid size-9 place-items-center rounded-lg border border-border text-foreground md:hidden"
+          >
+            {open ? <X className="size-5" /> : <Menu className="size-5" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile nav */}
+      {open ? (
+        <nav
+          className="border-t border-border bg-background px-5 py-3 md:hidden"
+          aria-label="Mobile"
+        >
+          <ul className="flex flex-col">
+            {NAV.map((item) => {
+              const active = pathname === item.href;
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    aria-current={active ? "page" : undefined}
+                    className={`block rounded-md px-3 py-3 text-base ${
+                      active
+                        ? "bg-muted font-medium text-foreground"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
+            <li className="mt-2 flex items-center justify-between border-t border-border px-3 pt-3">
+              <span className="text-sm text-muted-foreground">Theme</span>
+              <ThemeToggle />
+            </li>
+          </ul>
+        </nav>
+      ) : null}
     </header>
   );
 }

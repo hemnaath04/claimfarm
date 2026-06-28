@@ -51,34 +51,42 @@ const FAQS = [
 
 export default function FaqPage() {
   return (
-    <>
+    <div className="flex min-h-dvh flex-col">
       <SiteHeader />
-      <main className="max-w-[820px] mx-auto px-6 pt-20 pb-16">
-        <div className="text-xs font-semibold uppercase tracking-wider text-primary">FAQ</div>
-        <h1 className="mt-3 text-4xl md:text-5xl font-bold tracking-tight">
-          Questions, answered.
-        </h1>
+      <main className="flex-1">
+        {/* HERO */}
+        <section className="vl-forest">
+          <div className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
+            <div className="max-w-3xl vl-fade-up">
+              <p className="vl-eyebrow text-harvest dark:text-harvest">FAQ</p>
+              <h1 className="vl-display mt-3 text-white">Questions, answered.</h1>
+            </div>
+          </div>
+        </section>
 
-        <div className="mt-10">
-          <Accordion className="space-y-3">
-            {FAQS.map((f, i) => (
-              <AccordionItem
-                key={i}
-                value={`f${i}`}
-                className="glass rounded-xl border-none px-5"
-              >
-                <AccordionTrigger className="text-left text-base font-medium hover:no-underline">
-                  {f.q}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground leading-relaxed pb-4">
-                  {f.a}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
+        {/* ACCORDION */}
+        <section className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
+          <div className="mx-auto max-w-[820px]">
+            <Accordion className="flex flex-col gap-3">
+              {FAQS.map((f, i) => (
+                <AccordionItem
+                  key={i}
+                  value={`f${i}`}
+                  className="rounded-xl border border-border bg-card px-5 vl-shadow-card not-last:border-b-border"
+                >
+                  <AccordionTrigger className="text-left text-base font-semibold text-foreground hover:no-underline">
+                    {f.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4 leading-relaxed text-muted-foreground">
+                    {f.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        </section>
       </main>
       <SiteFooter />
-    </>
+    </div>
   );
 }

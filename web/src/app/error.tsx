@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { ClaimFarmLogo } from "@/components/brand/logo";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function RouteError({
   error,
@@ -19,46 +22,42 @@ export default function RouteError({
     }
   }, [error]);
 
-  const ref = error.digest ? `REF · ${error.digest.toUpperCase()}` : "REF · UNCAUGHT";
+  const ref = error.digest
+    ? `Ref · ${error.digest.toUpperCase()}`
+    : "Ref · uncaught";
 
   return (
-    <div className="auth-canvas min-h-dvh flex items-center justify-center px-6 py-12">
-      <div className="auth-canvas-violet" aria-hidden />
-      <main className="relative z-10 w-full max-w-[620px]">
-        <div className="glass-card p-5">
-          <div className="flex items-center gap-2.5">
-            <span className="brand-mark" aria-hidden />
-            <span className="text-[22px] font-bold tracking-tight text-[#F8FAFC]">
-              claimfarm
-            </span>
-          </div>
-
-          <div className="eyebrow-mono mt-4 text-[#9CA3AF]">{ref}</div>
-          <h1 className="mt-1 text-[34px] font-bold leading-[44px] text-[#F8FAFC]">
+    <div className="flex min-h-dvh flex-col bg-background">
+      <div className="px-5 py-5 sm:px-8">
+        <ClaimFarmLogo href="/" size={30} />
+      </div>
+      <main className="flex flex-1 items-center justify-center px-5 pb-20 sm:px-8">
+        <div className="w-full max-w-[620px] rounded-2xl border border-border bg-card p-8 vl-shadow-card">
+          <p className="vl-eyebrow">{ref}</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground">
             Something misfired
           </h1>
-          <p className="mt-2 text-[16px] leading-5 text-[#AEB8C6]">
-            Retry the failed action or share the digest with support — nothing in
-            your account is affected.
+          <p className="mt-2 text-[15px] text-muted-foreground">
+            Retry the failed action or share the reference with support —
+            nothing in your account is affected.
           </p>
 
-          <div className="mt-5 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => unstable_retry()}
-              className="btn-gradient h-[46px] px-5 text-sm inline-flex items-center"
-            >
+          <div className="mt-6 flex flex-wrap items-center gap-2.5">
+            <Button onClick={() => unstable_retry()} className="h-11 px-5">
               Retry
-            </button>
+            </Button>
             <Link
               href="/"
-              className="btn-ghost-translucent h-[46px] px-5 text-sm font-semibold inline-flex items-center"
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "h-11 px-5"
+              )}
             >
               Back to home
             </Link>
             <Link
               href="/contact"
-              className="text-sm text-[#8B95A5] hover:text-[#F8FAFC] transition px-3 py-2"
+              className="px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               Tell us what broke →
             </Link>

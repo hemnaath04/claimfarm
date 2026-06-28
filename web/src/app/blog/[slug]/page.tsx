@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { ArrowLeft } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 
@@ -72,20 +74,47 @@ export default async function BlogPostPage({
   if (!post) notFound();
 
   return (
-    <>
+    <div className="flex min-h-dvh flex-col">
       <SiteHeader />
-      <main className="max-w-[720px] mx-auto px-6 pt-20 pb-16">
-        <div className="text-xs font-medium text-muted-foreground">{post.date}</div>
-        <h1 className="mt-2 text-3xl md:text-5xl font-bold tracking-tight leading-tight">
-          {post.title}
-        </h1>
-        <article className="mt-10 space-y-6 text-base md:text-lg leading-relaxed text-muted-foreground">
-          {post.body.map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
+      <main className="flex-1">
+        <article className="mx-auto max-w-[720px] px-5 py-16 sm:px-8 sm:py-24">
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft aria-hidden className="size-4" />
+            All notes
+          </Link>
+
+          <p className="vl-eyebrow mt-8">Note · {post.date}</p>
+          <h1 className="mt-3 text-4xl font-bold leading-tight tracking-tight text-foreground break-words">
+            {post.title}
+          </h1>
+
+          {post.body.length > 0 ? (
+            <p className="mt-6 text-lg leading-7 text-muted-foreground">
+              {post.body[0]}
+            </p>
+          ) : null}
+
+          <div className="mt-8 space-y-6 text-base leading-7 text-foreground/90">
+            {post.body.slice(1).map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+          </div>
+
+          <div className="mt-12 border-t border-border pt-6">
+            <Link
+              href="/blog"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-forest transition-colors hover:underline"
+            >
+              <ArrowLeft aria-hidden className="size-4" />
+              All notes
+            </Link>
+          </div>
         </article>
       </main>
       <SiteFooter />
-    </>
+    </div>
   );
 }

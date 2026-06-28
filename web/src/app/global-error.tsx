@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import "./globals.css";
 
 // global-error.tsx fires when the root layout itself throws; the regular
-// error boundary is skipped, so this file must own its own <html>/<body>
-// and any styles it needs. Keep it visually self-contained.
+// error boundary is skipped, so this file must own its own <html>/<body>.
+// Inline styles only — Verdant Ledger ivory + forest, no Tailwind reliance.
 export default function GlobalError({
   error,
   unstable_retry,
@@ -31,55 +31,58 @@ export default function GlobalError({
           display: "grid",
           placeItems: "center",
           padding: "4rem 1.5rem",
-          backgroundColor: "#000",
-          color: "#f5f5f5",
+          backgroundColor: "#fffcf5",
+          color: "#191b18",
           fontFamily:
             "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
         }}
       >
         <title>ClaimFarm · System error</title>
-        <main style={{ maxWidth: "36rem", textAlign: "center" }}>
+        <main
+          style={{
+            maxWidth: "34rem",
+            width: "100%",
+            background: "#ffffff",
+            border: "1px solid #e4e0d8",
+            borderRadius: "1rem",
+            padding: "2rem",
+            boxShadow: "0 8px 24px 0 rgba(11,47,34,0.08)",
+          }}
+        >
           <p
             style={{
-              fontFamily:
-                '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
-              fontSize: "0.7rem",
-              letterSpacing: "0.28em",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              letterSpacing: "0.08em",
               textTransform: "uppercase",
-              color: "rgba(245,245,245,0.55)",
-              marginBottom: "1.5rem",
+              color: "#195b40",
+              margin: 0,
             }}
           >
-            error · fatal
+            Error · fatal
           </p>
           <h1
             style={{
-              fontSize: "2.5rem",
+              fontSize: "1.875rem",
               fontWeight: 700,
-              margin: 0,
+              margin: "0.75rem 0 0",
               lineHeight: 1.1,
+              letterSpacing: "-0.02em",
             }}
           >
-            ClaimFarm <span style={{ color: "#ccff00" }}>fell over</span>.
+            ClaimFarm hit a snag
           </h1>
-          <p
-            style={{
-              marginTop: "1rem",
-              color: "rgba(245,245,245,0.65)",
-              lineHeight: 1.6,
-            }}
-          >
+          <p style={{ marginTop: "0.5rem", color: "#69675f", lineHeight: 1.6 }}>
             The site itself errored out. You can try again, or come back in a
             moment — we&apos;ve been notified.
           </p>
           {error.digest ? (
             <p
               style={{
-                marginTop: "1rem",
+                marginTop: "0.75rem",
                 fontSize: "0.75rem",
-                color: "rgba(245,245,245,0.45)",
-                fontFamily:
-                  '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
+                color: "#9a9482",
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
               }}
             >
               ref · {error.digest}
@@ -87,9 +90,8 @@ export default function GlobalError({
           ) : null}
           <div
             style={{
-              marginTop: "2rem",
+              marginTop: "1.5rem",
               display: "flex",
-              justifyContent: "center",
               gap: "0.75rem",
               flexWrap: "wrap",
             }}
@@ -98,13 +100,14 @@ export default function GlobalError({
               type="button"
               onClick={() => unstable_retry()}
               style={{
-                background: "#ccff00",
-                color: "#000",
+                background: "#195b40",
+                color: "#ffffff",
                 fontWeight: 600,
                 border: "none",
-                padding: "0.625rem 1.25rem",
-                borderRadius: "0.5rem",
+                padding: "0.7rem 1.25rem",
+                borderRadius: "0.625rem",
                 cursor: "pointer",
+                minHeight: "44px",
               }}
             >
               Try again
@@ -112,11 +115,14 @@ export default function GlobalError({
             <a
               href="/"
               style={{
-                color: "#f5f5f5",
-                border: "1px solid rgba(245,245,245,0.2)",
-                padding: "0.625rem 1.25rem",
-                borderRadius: "0.5rem",
+                color: "#191b18",
+                border: "1px solid #e4e0d8",
+                padding: "0.7rem 1.25rem",
+                borderRadius: "0.625rem",
                 textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                minHeight: "44px",
               }}
             >
               Go home

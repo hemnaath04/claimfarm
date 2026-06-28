@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { postAuthJson } from "@/lib/auth-fetch";
+import { AuthField } from "@/components/auth/auth-field";
+import { Button } from "@/components/ui/button";
 
 const FRIENDLY: Record<number, string> = {
   409: "That email is already registered. Try signing in instead.",
@@ -39,7 +41,9 @@ export default function SignUpPage() {
       const e = err as { status?: number; detail?: string };
       if (e.status === 409) setConflict(true);
       const message =
-        (e.status && FRIENDLY[e.status]) || e.detail || "Sign-up failed. Try again.";
+        (e.status && FRIENDLY[e.status]) ||
+        e.detail ||
+        "Sign-up failed. Try again.";
       toast.error(message);
     } finally {
       setBusy(false);
@@ -47,102 +51,86 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="glass-card p-5">
-      <div className="flex items-center gap-2.5">
-        <span className="brand-mark" aria-hidden />
-        <span className="text-[22px] font-bold tracking-tight text-[#F8FAFC]">
-          claimfarm
-        </span>
-      </div>
-
-      <h1 className="mt-4 text-[25px] font-bold leading-8 text-[#F8FAFC]">
+    <div>
+      <h1 className="text-3xl font-bold tracking-tight text-foreground">
         Create your insurer workspace
       </h1>
-      <p className="mt-1 text-sm text-[#8B95A5]">
+      <p className="mt-2 text-[15px] text-muted-foreground">
         Free for the first 100 filed claims. No card required.
       </p>
 
       {conflict ? (
-        <div className="mt-4 rounded-xl border border-amber-400/40 bg-amber-500/10 p-3 text-sm text-amber-100">
+        <div
+          role="alert"
+          className="mt-5 rounded-lg border border-harvest-deep/40 bg-harvest/15 p-3 text-sm text-foreground"
+        >
           That email is already registered.{" "}
-          <Link href="/auth/sign-in" className="underline">
+          <Link href="/auth/sign-in" className="font-medium underline">
             Sign in
           </Link>{" "}
           or{" "}
-          <Link href="/auth/reset" className="underline">
+          <Link href="/auth/reset" className="font-medium underline">
             reset your password
           </Link>
           .
         </div>
       ) : null}
 
-      <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-3">
-        <label className="field">
-          <span className="field-label">Name</span>
-          <input
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter name"
-            className="field-input"
-            autoComplete="name"
-          />
-        </label>
+      <form onSubmit={onSubmit} className="mt-7 flex flex-col gap-4">
+        <AuthField
+          label="Name"
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Your full name"
+          autoComplete="name"
+        />
+        <AuthField
+          label="Organisation"
+          value={org}
+          onChange={(e) => setOrg(e.target.value)}
+          placeholder="Insurer, NGO, or co-op"
+          autoComplete="organization"
+        />
+        <AuthField
+          label="Email"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@insurer.org"
+          autoComplete="email"
+        />
+        <AuthField
+          label="Password"
+          type="password"
+          required
+          minLength={8}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="At least 8 characters"
+          autoComplete="new-password"
+        />
 
-        <label className="field">
-          <span className="field-label">Organization</span>
-          <input
-            value={org}
-            onChange={(e) => setOrg(e.target.value)}
-            placeholder="Enter organization"
-            className="field-input"
-            autoComplete="organization"
-          />
-        </label>
-
-        <label className="field">
-          <span className="field-label">Email</span>
-          <input
-            required
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter email"
-            className="field-input"
-            autoComplete="email"
-          />
-        </label>
-
-        <label className="field">
-          <span className="field-label">Password</span>
-          <input
-            required
-            type="password"
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter password"
-            className="field-input"
-            autoComplete="new-password"
-          />
-        </label>
-
-        <button
-          disabled={busy}
+        <Button
           type="submit"
-          className="btn-gradient w-full h-[46px] mt-2 text-sm"
+          disabled={busy}
+          className="mt-1 h-11 w-full text-[15px]"
         >
-          {busy ? "Creating account…" : "Create account"}
-        </button>
+          {busy ? "Creating workspace…" : "Create free workspace"}
+        </Button>
       </form>
 
-      <p className="mt-4 text-center text-[13px] text-[#8B95A5]">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         Already have an account?{" "}
-        <Link href="/auth/sign-in" className="text-[#BDF272] hover:underline">
+        <Link
+          href="/auth/sign-in"
+          className="font-medium text-primary hover:underline"
+        >
           Sign in
         </Link>
       </p>
-      <p className="mt-2 text-center text-[11px] text-[#687386]">
+      <p className="mt-3 text-center text-xs text-muted-foreground">
         By creating an account you agree to our{" "}
         <Link href="/legal/terms" className="underline">
           Terms
@@ -151,7 +139,7 @@ export default function SignUpPage() {
         <Link href="/legal/privacy" className="underline">
           Privacy Policy
         </Link>
-        . We hash with Argon2id.
+        . Passwords are hashed with Argon2id.
       </p>
     </div>
   );

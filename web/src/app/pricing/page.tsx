@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SiteHeader } from "@/components/marketing/site-header";
@@ -56,8 +57,7 @@ const TIERS: Tier[] = [
   {
     name: "Enterprise",
     price: "Custom",
-    description:
-      "For national insurers, government schemes, and reinsurers.",
+    description: "For national insurers, government schemes, and reinsurers.",
     features: [
       "Everything in Growth",
       "Volume pricing under $0.40/claim",
@@ -80,84 +80,110 @@ const FAQ_ROW = [
 
 export default function PricingPage() {
   return (
-    <>
+    <div className="flex min-h-dvh flex-col">
       <SiteHeader />
-      <main className="max-w-[1280px] mx-auto px-6 pt-20 pb-16">
-        <div className="text-center max-w-3xl mx-auto">
-          <div className="text-xs font-semibold uppercase tracking-wider text-primary">
-            Pricing
+      <main className="flex-1">
+        {/* HERO */}
+        <section className="vl-forest">
+          <div className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
+            <div className="mx-auto max-w-3xl text-center vl-fade-up">
+              <p className="vl-eyebrow text-harvest dark:text-harvest">Pricing</p>
+              <h1 className="vl-display mt-3 text-white">
+                Pay per filed claim. No surprises.
+              </h1>
+              <p className="mt-5 text-lg leading-relaxed text-white/80">
+                Free pilot for your first 100 claims. Then $0.85 a claim on
+                Growth, volume pricing on Enterprise. AI inference and storage
+                are on us.
+              </p>
+            </div>
           </div>
-          <h1 className="mt-3 text-4xl md:text-6xl font-bold tracking-tight">
-            Pay per filed claim. <span className="neon-text">No surprises.</span>
-          </h1>
-          <p className="mt-5 text-lg text-muted-foreground">
-            Free pilot for your first 100 claims. Then $0.85 a claim on Growth,
-            volume pricing on Enterprise. AI inference and storage are on us.
-          </p>
-        </div>
+        </section>
 
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-4">
-          {TIERS.map((t) => (
-            <Card
-              key={t.name}
-              className={`glass relative ${
-                t.highlight ? "ring-2 ring-primary/60 shadow-[0_0_60px_rgba(204,255,0,0.15)]" : ""
-              }`}
-            >
-              {t.highlight ? (
-                <div className="absolute -top-3 right-6 px-3 py-1 rounded-full bg-primary text-primary-foreground text-[10px] uppercase tracking-wider font-bold">
-                  Most popular
-                </div>
-              ) : null}
-              <CardContent className="p-7">
-                <div className="text-lg font-semibold">{t.name}</div>
-                <div className="mt-1 text-sm text-muted-foreground">{t.description}</div>
-                <div className="mt-6 flex items-baseline gap-2">
-                  <div className="text-4xl font-bold tabular-nums">{t.price}</div>
-                  {t.cadence ? (
-                    <div className="text-sm text-muted-foreground">{t.cadence}</div>
-                  ) : null}
-                </div>
-                <Link href={t.cta.href}>
+        {/* PLANS */}
+        <section className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
+          <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-3">
+            {TIERS.map((t) => (
+              <Card
+                key={t.name}
+                className={`relative rounded-xl bg-card ring-0 ${
+                  t.highlight
+                    ? "border-2 border-forest vl-shadow-raised dark:border-success"
+                    : "border border-border vl-shadow-card"
+                }`}
+              >
+                {t.highlight ? (
+                  <div className="absolute -top-3 right-6">
+                    <span className="vl-harvest inline-flex items-center rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider">
+                      Recommended
+                    </span>
+                  </div>
+                ) : null}
+                <CardContent className="p-6">
+                  <div className="text-lg font-semibold text-foreground">
+                    {t.name}
+                  </div>
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    {t.description}
+                  </div>
+                  <div className="mt-6 flex items-baseline gap-2">
+                    <div className="text-4xl font-bold tabular-nums text-foreground">
+                      {t.price}
+                    </div>
+                    {t.cadence ? (
+                      <div className="text-sm text-muted-foreground">
+                        {t.cadence}
+                      </div>
+                    ) : null}
+                  </div>
                   <Button
-                    className={`mt-6 w-full ${
-                      t.highlight
-                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                        : ""
-                    }`}
+                    render={<Link href={t.cta.href} />}
                     variant={t.highlight ? "default" : "outline"}
+                    className="mt-6 h-11 w-full px-6 text-base"
                   >
                     {t.cta.label}
                   </Button>
-                </Link>
-                <ul className="mt-6 space-y-2.5 text-sm">
-                  {t.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">✓</span>
-                      <span className="text-muted-foreground">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <section className="mt-24">
-          <h2 className="text-2xl font-bold">Common questions</h2>
-          <div className="mt-6 space-y-3">
-            {FAQ_ROW.map(([q, a]) => (
-              <Card key={q} className="glass">
-                <CardContent className="p-6">
-                  <div className="font-medium">{q}</div>
-                  <div className="mt-2 text-sm text-muted-foreground">{a}</div>
+                  <ul className="mt-6 space-y-2.5 text-sm">
+                    {t.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2">
+                        <Check
+                          className="mt-0.5 size-4 shrink-0 text-forest dark:text-success"
+                          aria-hidden
+                        />
+                        <span className="text-muted-foreground">{f}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </CardContent>
               </Card>
             ))}
           </div>
         </section>
+
+        {/* COMMON QUESTIONS */}
+        <section className="bg-muted">
+          <div className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
+            <p className="vl-eyebrow">Common questions</p>
+            <h2 className="vl-h1 mt-3 text-foreground">Before you sign up.</h2>
+            <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+              {FAQ_ROW.map(([q, a]) => (
+                <Card
+                  key={q}
+                  className="rounded-xl border border-border bg-card ring-0 vl-shadow-card"
+                >
+                  <CardContent className="p-6">
+                    <div className="font-semibold text-foreground">{q}</div>
+                    <div className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      {a}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
       </main>
       <SiteFooter />
-    </>
+    </div>
   );
 }

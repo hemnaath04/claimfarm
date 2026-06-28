@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { postAuthJson } from "@/lib/auth-fetch";
+import { AuthField } from "@/components/auth/auth-field";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function ResetPage() {
   const [email, setEmail] = useState("");
@@ -23,7 +26,9 @@ export default function ResetPage() {
         setDevLink(data.reset_url);
         toast.success("Reset link ready below (email transport not configured).");
       } else {
-        toast.success("If an account exists for that email, a reset link is on its way.");
+        toast.success(
+          "If an account exists for that email, a reset link is on its way."
+        );
       }
     } catch (err) {
       const e = err as { detail?: string };
@@ -33,84 +38,80 @@ export default function ResetPage() {
     }
   };
 
-  return (
-    <div className="glass-card p-5">
-      <div className="flex items-center gap-2.5">
-        <span className="brand-mark" aria-hidden />
-        <span className="text-[22px] font-bold tracking-tight text-[#F8FAFC]">
-          claimfarm
-        </span>
-      </div>
-
-      {sent ? (
-        <>
-          <h1 className="mt-4 text-[25px] font-bold leading-8 text-[#F8FAFC]">
-            Check your inbox
-          </h1>
-          <p className="mt-1 text-sm text-[#8B95A5]">
-            If an account exists for{" "}
-            <span className="text-[#F8FAFC]">{email}</span>, we just sent it a
-            password-reset link. It expires in 1 hour.
-          </p>
-          {devLink ? (
-            <div className="mt-4 rounded-xl border border-[#BDF272]/30 bg-[#BDF272]/5 p-3 text-[13px]">
-              <div className="mb-1 font-medium text-[#BDF272]">
-                Dev mode — email transport not configured
-              </div>
-              <a
-                href={devLink}
-                className="font-mono text-[12px] text-[#BDF272] underline break-all"
-              >
-                {devLink}
-              </a>
+  if (sent) {
+    return (
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          Check your inbox
+        </h1>
+        <p className="mt-2 text-[15px] text-muted-foreground">
+          If an account exists for{" "}
+          <span className="font-medium text-foreground">{email}</span>, we just
+          sent it a password-reset link. It expires in 1 hour.
+        </p>
+        {devLink ? (
+          <div className="mt-5 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
+            <div className="mb-1.5 font-medium text-primary">
+              Dev mode — email transport not configured
             </div>
-          ) : null}
-          <Link
-            href="/auth/sign-in"
-            className="btn-ghost-translucent w-full h-[46px] mt-4 text-sm font-semibold inline-flex items-center justify-center"
-          >
-            Back to sign in
-          </Link>
-        </>
-      ) : (
-        <>
-          <h1 className="mt-4 text-[25px] font-bold leading-8 text-[#F8FAFC]">
-            Reset your password
-          </h1>
-          <p className="mt-1 text-sm text-[#8B95A5]">
-            We&apos;ll email you a link to set a new one.
-          </p>
-
-          <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-3">
-            <label className="field">
-              <span className="field-label">Email</span>
-              <input
-                required
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter email"
-                className="field-input"
-                autoComplete="email"
-              />
-            </label>
-            <button
-              disabled={busy}
-              type="submit"
-              className="btn-gradient w-full h-[46px] mt-2 text-sm"
+            <a
+              href={devLink}
+              className="break-all font-mono text-[13px] text-primary underline"
             >
-              {busy ? "Sending…" : "Send reset link"}
-            </button>
-          </form>
+              {devLink}
+            </a>
+          </div>
+        ) : null}
+        <Link
+          href="/auth/sign-in"
+          className={cn(
+            buttonVariants({ variant: "outline" }),
+            "mt-6 h-11 w-full text-[15px]"
+          )}
+        >
+          Back to sign in
+        </Link>
+      </div>
+    );
+  }
 
-          <p className="mt-4 text-center text-[13px] text-[#8B95A5]">
-            Remembered it?{" "}
-            <Link href="/auth/sign-in" className="text-[#BDF272] hover:underline">
-              Back to sign in
-            </Link>
-          </p>
-        </>
-      )}
+  return (
+    <div>
+      <h1 className="text-3xl font-bold tracking-tight text-foreground">
+        Reset your password
+      </h1>
+      <p className="mt-2 text-[15px] text-muted-foreground">
+        We&apos;ll email you a link to set a new one.
+      </p>
+
+      <form onSubmit={onSubmit} className="mt-7 flex flex-col gap-4">
+        <AuthField
+          label="Email"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@insurer.org"
+          autoComplete="email"
+        />
+        <Button
+          type="submit"
+          disabled={busy}
+          className="mt-1 h-11 w-full text-[15px]"
+        >
+          {busy ? "Sending…" : "Send reset link"}
+        </Button>
+      </form>
+
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Remembered it?{" "}
+        <Link
+          href="/auth/sign-in"
+          className="font-medium text-primary hover:underline"
+        >
+          Back to sign in
+        </Link>
+      </p>
     </div>
   );
 }

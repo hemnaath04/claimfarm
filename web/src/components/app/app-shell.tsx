@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
+import { ClaimFarmLogo } from "@/components/brand/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { AuthUser, signOut, useAuthUser } from "@/lib/user-state";
 
 const NAV: { href: string; label: string }[] = [
@@ -20,26 +24,23 @@ function initials(name: string, email: string) {
 
 function UserPill({ user }: { user: AuthUser }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2.5">
       <div
-        className="h-8 w-8 rounded-full grid place-items-center text-[12px] font-bold text-[#07110D]"
-        style={{
-          background: "var(--brand-gradient)",
-          border: "1px solid rgba(189, 242, 114, 0.45)",
-        }}
+        className="grid size-9 place-items-center rounded-full bg-primary text-[12px] font-bold text-primary-foreground"
         title={user.email}
+        aria-hidden
       >
         {initials(user.name, user.email)}
       </div>
-      <div className="hidden md:flex flex-col leading-tight">
-        <span className="text-[13px] font-medium text-[#F8FAFC]">
+      <div className="hidden flex-col leading-tight lg:flex">
+        <span className="text-[13px] font-medium text-foreground">
           {user.name || user.email.split("@")[0]}
         </span>
-        <span className="text-[11px] text-[#8B95A5]">{user.email}</span>
+        <span className="text-[11px] text-muted-foreground">{user.email}</span>
       </div>
       <button
         onClick={signOut}
-        className="ml-2 text-[12px] text-[#8B95A5] hover:text-[#F8FAFC] transition border border-white/10 rounded-md px-2.5 py-1"
+        className="ml-1 rounded-md border border-border px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
         Sign out
       </button>
@@ -50,23 +51,18 @@ function UserPill({ user }: { user: AuthUser }) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const user = useAuthUser();
+  const [open, setOpen] = useState(false);
 
   return (
-    <div className="auth-canvas min-h-dvh">
-      <div className="auth-canvas-violet" aria-hidden />
-      <header className="relative z-10 border-b border-white/5 backdrop-blur-md bg-[rgba(5,7,10,0.55)]">
-        <div className="max-w-[1280px] mx-auto px-6 h-14 flex items-center gap-6">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2.5 font-bold tracking-tight"
+    <div className="min-h-dvh bg-secondary/40">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-[1320px] items-center gap-5 px-5 sm:px-8">
+          <ClaimFarmLogo href="/dashboard" size={30} suffix="console" />
+
+          <nav
+            className="ml-2 hidden items-center gap-1 md:flex"
+            aria-label="Console"
           >
-            <span className="brand-mark" aria-hidden style={{ width: 28, height: 28, borderRadius: 7 }} />
-            <span className="text-[18px] text-[#F8FAFC]">claimfarm</span>
-            <span className="hidden sm:inline-block text-[10px] uppercase tracking-[0.18em] text-[#8B95A5] border border-white/10 rounded px-1.5 py-0.5 ml-1">
-              console
-            </span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-1 ml-2">
             {NAV.map((item) => {
               const active =
                 pathname === item.href ||
@@ -75,10 +71,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`px-3 py-1.5 rounded-md text-sm transition ${
+                  aria-current={active ? "page" : undefined}
+                  className={`rounded-md px-3 py-2 text-sm transition-colors ${
                     active
-                      ? "text-[#F8FAFC] bg-white/[0.06]"
-                      : "text-[#8B95A5] hover:text-[#F8FAFC] hover:bg-white/[0.03]"
+                      ? "bg-muted font-medium text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                   }`}
                 >
                   {item.label}
@@ -86,30 +83,86 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
-          <div className="ml-auto flex items-center gap-3">
+
+          <div className="ml-auto flex items-center gap-2.5">
             <Link
               href="/"
-              className="text-[12px] text-[#8B95A5] hover:text-[#F8FAFC] transition hidden md:inline"
+              className="hidden text-[12px] text-muted-foreground transition-colors hover:text-foreground lg:inline"
             >
               claimfarm.com →
             </Link>
+            <ThemeToggle className="hidden sm:inline-grid" />
             {user === null ? (
-              <div className="h-8 w-24 rounded-md bg-white/5 animate-pulse" aria-hidden />
+              <div
+                className="h-9 w-24 animate-pulse rounded-lg bg-muted"
+                aria-hidden
+              />
             ) : user === false ? (
               <Link
                 href="/auth/sign-in"
-                className="btn-gradient h-9 px-4 text-[13px] inline-flex items-center"
+                className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 Sign in
               </Link>
             ) : (
               <UserPill user={user} />
             )}
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-label={open ? "Close menu" : "Open menu"}
+              aria-expanded={open}
+              className="inline-grid size-9 place-items-center rounded-lg border border-border text-foreground md:hidden"
+            >
+              {open ? <X className="size-5" /> : <Menu className="size-5" />}
+            </button>
           </div>
         </div>
+
+        {open ? (
+          <nav
+            className="border-t border-border bg-background px-5 py-3 md:hidden"
+            aria-label="Console mobile"
+          >
+            <ul className="flex flex-col">
+              {NAV.map((item) => {
+                const active =
+                  pathname === item.href ||
+                  (item.href !== "/dashboard" &&
+                    pathname.startsWith(item.href));
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setOpen(false)}
+                      aria-current={active ? "page" : undefined}
+                      className={`block rounded-md px-3 py-3 text-base ${
+                        active
+                          ? "bg-muted font-medium text-foreground"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
+              <li className="mt-2 flex items-center justify-between border-t border-border px-3 pt-3">
+                <Link
+                  href="/"
+                  className="text-sm text-muted-foreground"
+                  onClick={() => setOpen(false)}
+                >
+                  claimfarm.com →
+                </Link>
+                <ThemeToggle />
+              </li>
+            </ul>
+          </nav>
+        ) : null}
       </header>
 
-      <main className="relative z-10">{children}</main>
+      <main>{children}</main>
     </div>
   );
 }

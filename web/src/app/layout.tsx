@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -9,16 +10,14 @@ const inter = Inter({
   display: "swap",
 });
 
-const mono = JetBrains_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
-
 export const metadata: Metadata = {
-  title: "ClaimFarm · Adjuster Console",
+  metadataBase: new URL("https://claimfarm-dashboard.vercel.app"),
+  title: {
+    default: "ClaimFarm · Photo-first crop insurance",
+    template: "%s · ClaimFarm",
+  },
   description:
-    "Triage smallholder farmer crop-insurance claims, triaged by Qwen-VL, Open-Meteo and DashVector.",
+    "Crop insurance that starts with a photo. ClaimFarm turns a farmer's photo into a filed claim — assessed by Qwen-VL, corroborated against weather, reviewed by a human adjuster.",
 };
 
 export default function RootLayout({
@@ -29,11 +28,19 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${mono.variable} dark h-full antialiased`}
+      suppressHydrationWarning
+      className={`${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        {children}
-        <Toaster richColors closeButton position="bottom-right" />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+          <Toaster richColors closeButton position="bottom-right" />
+        </ThemeProvider>
       </body>
     </html>
   );

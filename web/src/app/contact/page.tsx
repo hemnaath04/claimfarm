@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Mail, Send, Code2, ArrowUpRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,104 +11,176 @@ export const metadata: Metadata = { title: "Contact · ClaimFarm" };
 
 export default function ContactPage() {
   return (
-    <>
+    <div className="flex min-h-dvh flex-col">
       <SiteHeader />
-      <main className="max-w-[1100px] mx-auto px-6 pt-20 pb-16">
-        <div className="text-xs font-semibold uppercase tracking-wider text-primary">Contact</div>
-        <h1 className="mt-3 text-4xl md:text-5xl font-bold tracking-tight">
-          Let's talk.
-        </h1>
+      <main className="flex-1">
+        <section className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
+            {/* Left: intro + contact channels */}
+            <div className="min-w-0">
+              <p className="vl-eyebrow">Contact</p>
+              <h1 className="vl-h1 mt-3">Let&apos;s talk.</h1>
+              <p className="mt-5 max-w-prose text-lg leading-7 text-muted-foreground">
+                Whether you&apos;re an insurer, an NGO, or a developer kicking the
+                tires, tell us what you&apos;re trying to ship. The fastest way to
+                see ClaimFarm is to message the demo bot.
+              </p>
 
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2">
-            <Card className="glass">
-              <CardContent className="p-7">
-                {/* Placeholder form — POSTs to /api/contact (mock) */}
-                <form
-                  action="/api/contact"
-                  method="post"
-                  className="space-y-4"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs uppercase tracking-wider text-muted-foreground">Name</label>
-                      <Input name="name" placeholder="Your name" className="mt-1.5 bg-card/40" />
-                    </div>
-                    <div>
-                      <label className="text-xs uppercase tracking-wider text-muted-foreground">Email</label>
-                      <Input name="email" type="email" placeholder="you@example.com" className="mt-1.5 bg-card/40" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs uppercase tracking-wider text-muted-foreground">Organisation</label>
-                    <Input name="org" placeholder="Your insurer / NGO" className="mt-1.5 bg-card/40" />
-                  </div>
-                  <div>
-                    <label className="text-xs uppercase tracking-wider text-muted-foreground">How can we help?</label>
-                    <Textarea name="message" rows={6} placeholder="What are you trying to ship?" className="mt-1.5 bg-card/40" />
-                  </div>
-                  <Button
-                    type="submit"
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    Send message →
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="space-y-4">
-            <Card className="glass">
-              <CardContent className="p-5">
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Demo bot
-                </div>
-                <div className="mt-1 font-semibold">@claimfarm_demo_bot</div>
+              <div className="mt-8 space-y-3">
                 <a
                   href="https://t.me/claimfarm_demo_bot"
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-2 inline-block text-sm text-primary hover:underline"
+                  className="group flex items-start gap-4 rounded-xl border border-border bg-card p-5 vl-shadow-card transition-shadow hover:vl-shadow-raised"
                 >
-                  Open on Telegram →
+                  <span
+                    aria-hidden
+                    className="mt-0.5 inline-grid size-10 shrink-0 place-items-center rounded-lg bg-forest/10 text-forest"
+                  >
+                    <Send className="size-5" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Demo bot
+                    </span>
+                    <span className="mt-0.5 block font-semibold text-card-foreground break-words">
+                      @claimfarm_demo_bot
+                    </span>
+                    <span className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-forest">
+                      Open on Telegram
+                      <ArrowUpRight aria-hidden className="size-4" />
+                    </span>
+                  </span>
                 </a>
-              </CardContent>
-            </Card>
 
-            <Card className="glass">
-              <CardContent className="p-5">
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Source
-                </div>
-                <div className="mt-1 font-semibold">github.com/hemnaath04/claimfarm</div>
                 <a
                   href="https://github.com/hemnaath04/claimfarm"
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-2 inline-block text-sm text-primary hover:underline"
+                  className="group flex items-start gap-4 rounded-xl border border-border bg-card p-5 vl-shadow-card transition-shadow hover:vl-shadow-raised"
                 >
-                  View repository →
+                  <span
+                    aria-hidden
+                    className="mt-0.5 inline-grid size-10 shrink-0 place-items-center rounded-lg bg-forest/10 text-forest"
+                  >
+                    <Code2 className="size-5" aria-hidden />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Source
+                    </span>
+                    <span className="mt-0.5 block font-semibold text-card-foreground break-words">
+                      github.com/hemnaath04/claimfarm
+                    </span>
+                    <span className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-forest">
+                      View repository
+                      <ArrowUpRight aria-hidden className="size-4" />
+                    </span>
+                  </span>
                 </a>
-              </CardContent>
-            </Card>
 
-            <Card className="glass">
-              <CardContent className="p-5">
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Sales
+                <div className="rounded-xl border border-border bg-card p-5 vl-shadow-card">
+                  <div className="flex items-start gap-4">
+                    <span
+                      aria-hidden
+                      className="mt-0.5 inline-grid size-10 shrink-0 place-items-center rounded-lg bg-forest/10 text-forest"
+                    >
+                      <Mail className="size-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Sales
+                      </div>
+                      <a
+                        href="mailto:sales@claimfarm.dev"
+                        className="mt-0.5 block font-medium text-card-foreground break-words hover:text-forest"
+                      >
+                        sales@claimfarm.dev
+                      </a>
+                      <div className="mt-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Support
+                      </div>
+                      <a
+                        href="mailto:help@claimfarm.dev"
+                        className="mt-0.5 block font-medium text-card-foreground break-words hover:text-forest"
+                      >
+                        help@claimfarm.dev
+                      </a>
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-1 font-mono text-sm">sales@claimfarm.dev</div>
-                <div className="mt-3 text-xs uppercase tracking-wider text-muted-foreground">
-                  Support
-                </div>
-                <div className="mt-1 font-mono text-sm">help@claimfarm.dev</div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+
+            {/* Right: form */}
+            <div className="min-w-0">
+              <Card className="rounded-3xl border border-border bg-card vl-shadow-card">
+                <CardContent className="p-6 sm:p-8">
+                  {/* Placeholder form — POSTs to /api/contact (mock) */}
+                  <form action="/api/contact" method="post" className="space-y-5">
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <label htmlFor="name" className="text-sm font-medium text-foreground">
+                          Name
+                        </label>
+                        <Input
+                          id="name"
+                          name="name"
+                          required
+                          autoComplete="name"
+                          placeholder="Your name"
+                          className="h-11"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label htmlFor="email" className="text-sm font-medium text-foreground">
+                          Email
+                        </label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          required
+                          autoComplete="email"
+                          placeholder="you@example.com"
+                          className="h-11"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label htmlFor="org" className="text-sm font-medium text-foreground">
+                        Organisation
+                      </label>
+                      <Input
+                        id="org"
+                        name="org"
+                        placeholder="Your insurer / NGO"
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label htmlFor="message" className="text-sm font-medium text-foreground">
+                        How can we help?
+                      </label>
+                      <Textarea
+                        id="message"
+                        name="message"
+                        rows={6}
+                        required
+                        placeholder="What are you trying to ship?"
+                      />
+                    </div>
+                    <Button type="submit" className="h-11 w-full px-6 text-base sm:w-auto">
+                      Send message
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
+        </section>
       </main>
       <SiteFooter />
-    </>
+    </div>
   );
 }

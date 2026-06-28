@@ -8,7 +8,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -39,50 +39,138 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
+  /* Verdant Ledger brand tokens (exposed to Tailwind as bg-forest, text-harvest, …) */
+  --color-forest: var(--forest-700);
+  --color-forest-deep: var(--forest-900);
+  --color-harvest: var(--harvest-400);
+  --color-harvest-deep: var(--harvest-deep);
+  --color-clay: var(--clay-400);
+  --color-sky: var(--sky);
+  --color-success: var(--success);
+  --color-ivory: var(--ivory-100);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xl: calc(var(--radius) * 1.6);
+  --radius-2xl: calc(var(--radius) * 2.2);
+  --radius-3xl: calc(var(--radius) * 2.8);
+  --radius-4xl: calc(var(--radius) * 3.4);
 }
 
-:root,
+/* ==========================================================================
+ * Verdant Ledger — light theme (default)
+ * Warm ivory canvas, deep forest-green primary, harvest-yellow highlights,
+ * clay + sky-blue secondary accents. Flat tones, soft borders, restrained
+ * forest-tinted shadows. Inter throughout.
+ * ======================================================================== */
+
+:root {
+  /* raw brand scale */
+  --forest-900: #0b2f22;
+  --forest-700: #195b40;
+  --forest-focus: 45 122 88;
+  --harvest-400: #f4c95d;
+  --harvest-deep: #d8951c;
+  --clay-400: #d98263;
+  --sky: #367eae;
+  --success: #218a57;
+  --danger: #c64b4b;
+  --quiet: #f0e7d2;
+  --ivory-canvas: #fffcf5;
+  --ivory-100: #faf5e8;
+  --ink: #191b18;
+  --muted-ink: #69675f;
+  --hairline: #e4e0d8;
+
+  /* semantic (shadcn) */
+  --background: var(--ivory-canvas);
+  --foreground: var(--ink);
+  --card: #ffffff;
+  --card-foreground: var(--ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--ink);
+  --primary: var(--forest-700);
+  --primary-foreground: #ffffff;
+  --secondary: var(--ivory-100);
+  --secondary-foreground: var(--ink);
+  --muted: var(--ivory-100);
+  --muted-foreground: var(--muted-ink);
+  --accent: #f1ecdd;
+  --accent-foreground: var(--ink);
+  --destructive: var(--danger);
+  --border: var(--hairline);
+  --input: var(--hairline);
+  --ring: rgb(var(--forest-focus));
+
+  --chart-1: var(--forest-700);
+  --chart-2: var(--harvest-400);
+  --chart-3: var(--sky);
+  --chart-4: var(--clay-400);
+  --chart-5: var(--success);
+
+  --radius: 0.625rem; /* 10px controls; cards use rounded-xl ≈ 16px */
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--forest-700);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--ivory-100);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--hairline);
+  --sidebar-ring: rgb(var(--forest-focus));
+
+  /* elevation */
+  --shadow-card: 0 8px 24px 0 rgb(11 47 34 / 0.08);
+  --shadow-raised: 0 16px 40px -4px rgb(11 47 34 / 0.14);
+}
+
 .dark {
-  /* Electric Kiwi: pure black background, neon yellow-green primary, mono accents */
-  --background: oklch(0.10 0 0);             /* near-black */
-  --foreground: oklch(0.97 0 0);             /* near-white */
-  --card: oklch(0.16 0.005 250);             /* dark slate */
-  --card-foreground: oklch(0.97 0 0);
-  --popover: oklch(0.14 0.005 250);
-  --popover-foreground: oklch(0.97 0 0);
-  --primary: oklch(0.94 0.24 122);           /* #CCFF00 vibe — neon yellow-green */
-  --primary-foreground: oklch(0.10 0 0);     /* black text on the neon */
-  --secondary: oklch(0.22 0.005 250);
-  --secondary-foreground: oklch(0.97 0 0);
-  --muted: oklch(0.20 0.005 250);
-  --muted-foreground: oklch(0.62 0.015 250);
-  --accent: oklch(0.25 0.005 250);
-  --accent-foreground: oklch(0.97 0 0);
-  --destructive: oklch(0.65 0.21 25);
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 10%);
-  --ring: oklch(0.94 0.24 122 / 60%);
-  --chart-1: oklch(0.94 0.24 122);
-  --chart-2: oklch(0.7 0.18 162);
-  --chart-3: oklch(0.65 0.16 200);
-  --chart-4: oklch(0.6 0.14 280);
-  --chart-5: oklch(0.55 0.12 30);
-  --radius: 0.75rem;
-  --sidebar: oklch(0.13 0.005 250);
-  --sidebar-foreground: oklch(0.97 0 0);
-  --sidebar-primary: oklch(0.94 0.24 122);
-  --sidebar-primary-foreground: oklch(0.10 0 0);
-  --sidebar-accent: oklch(0.22 0.005 250);
-  --sidebar-accent-foreground: oklch(0.97 0 0);
-  --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.94 0.24 122 / 60%);
+  /* Verdant Ledger after dark — deep forest canvas, ivory text */
+  --ivory-canvas: #0b1712;
+  --ivory-100: #112a20;
+  --ink: #f4f1e8;
+  --muted-ink: #a9b5ad;
+  --hairline: #264334;
+
+  --background: #081310;
+  --foreground: var(--ink);
+  --card: #102219;
+  --card-foreground: var(--ink);
+  --popover: #102219;
+  --popover-foreground: var(--ink);
+  --primary: #4cae82;
+  --primary-foreground: #06140e;
+  --secondary: #112a20;
+  --secondary-foreground: var(--ink);
+  --muted: #112a20;
+  --muted-foreground: var(--muted-ink);
+  --accent: #16332579;
+  --accent-foreground: var(--ink);
+  --destructive: #e2706f;
+  --border: var(--hairline);
+  --input: #2c4d3c;
+  --ring: #4cae82;
+
+  --harvest-400: #f4c95d;
+  --harvest-deep: #e0a83a;
+  --success: #45c486;
+  --danger: #e2706f;
+  --sky: #6aa8d4;
+  --clay-400: #e0987c;
+
+  --sidebar: #102219;
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: #4cae82;
+  --sidebar-primary-foreground: #06140e;
+  --sidebar-accent: #112a20;
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--hairline);
+  --sidebar-ring: #4cae82;
+
+  --shadow-card: 0 8px 24px 0 rgb(0 0 0 / 0.32);
+  --shadow-raised: 0 16px 40px -4px rgb(0 0 0 / 0.46);
 }
 
 @layer base {
@@ -91,247 +179,101 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    background-image:
-      radial-gradient(ellipse 80% 50% at 50% -20%, oklch(0.94 0.24 122 / 8%), transparent 60%),
-      radial-gradient(ellipse 60% 40% at 100% 100%, oklch(0.65 0.16 200 / 6%), transparent 60%);
-    background-attachment: fixed;
   }
   html {
     @apply font-sans;
   }
+  /* Visible keyboard focus everywhere, never on mouse click */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
 }
 
-/* Glass card surfaces */
-.glass {
-  background: oklch(0.16 0.005 250 / 70%);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid oklch(1 0 0 / 8%);
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-/* Mono ID style */
-.mono-id {
-  font-family: var(--font-mono);
-  letter-spacing: 0.04em;
-  font-size: 0.78rem;
-  color: oklch(0.7 0.005 250);
+/* ==========================================================================
+ * Verdant Ledger utility classes
+ * ======================================================================== */
+
+/* Eyebrow / kicker — uppercase forest label above section headings */
+.vl-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--forest-700);
+}
+.dark .vl-eyebrow {
+  color: #6cc79b;
 }
 
-/* Subtle neon glow for the primary accent */
-.neon-text {
-  color: oklch(0.94 0.24 122);
-  text-shadow: 0 0 18px oklch(0.94 0.24 122 / 35%);
-}
-
-/* -------------------------------------------------------------------------
- * Acrely auth + error design system (Figma node 2:22)
- *
- * Used by /auth/* and the custom 404 / error pages. Keeps the rest of the
- * marketing site on the original Electric Kiwi flat-lime aesthetic.
- * --------------------------------------------------------------------- */
-
-:root {
-  --brand-gradient: linear-gradient(
-    128deg,
-    #bdf272 8%,
-    #72e4c2 51%,
-    #8fd9ff 86%
-  );
-  --auth-canvas-bg: #05070a;
-  --card-stroke: rgba(255, 255, 255, 0.1);
-  --mono-label: #8b95a5;
-  --mono-placeholder: #687386;
-}
-
-.auth-canvas {
-  background-color: var(--auth-canvas-bg);
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-
-/* Three layered radial gradients — moss / cyan / violet — that softly
-   illuminate the page behind the cards. Positions match the Figma frame. */
-.auth-canvas::before,
-.auth-canvas::after,
-.auth-canvas > .auth-canvas-violet {
-  content: "";
-  position: absolute;
-  pointer-events: none;
-  z-index: 0;
-  border-radius: 50%;
-  filter: blur(2px);
-}
-.auth-canvas::before {
-  width: 720px;
-  height: 720px;
-  top: -240px;
-  left: -220px;
-  background: radial-gradient(
-    circle at 50% 58%,
-    rgba(189, 242, 114, 0.18) 0%,
-    rgba(5, 5, 5, 0) 70%
-  );
-}
-.auth-canvas::after {
-  width: 680px;
-  height: 680px;
-  top: 150px;
-  right: -120px;
-  background: radial-gradient(
-    circle at 50% 58%,
-    rgba(143, 217, 255, 0.14) 0%,
-    rgba(5, 5, 5, 0) 70%
-  );
-}
-.auth-canvas > .auth-canvas-violet {
-  width: 640px;
-  height: 640px;
-  bottom: -160px;
-  right: 80px;
-  background: radial-gradient(
-    circle at 50% 58%,
-    rgba(199, 184, 255, 0.12) 0%,
-    rgba(5, 5, 5, 0) 70%
-  );
-}
-
-/* Card surface used on Acrely auth + error cards. Distinct from .glass so
-   the marketing site's glass treatment doesn't change. */
-.glass-card {
-  background: rgba(17, 24, 39, 0.78);
-  border: 1px solid var(--card-stroke);
-  border-radius: 14px;
-  box-shadow: 0px 24px 54px -18px rgba(0, 0, 0, 0.34);
-  backdrop-filter: blur(9px);
-  -webkit-backdrop-filter: blur(9px);
-}
-
-.glass-card-violet {
-  background: rgba(30, 24, 48, 0.78);
-}
-
-/* The 34×34 leaf-grid mark — gradient fill, 9px radius. */
-.brand-mark {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: var(--brand-gradient);
-  display: inline-block;
-  flex-shrink: 0;
-  position: relative;
-}
-.brand-mark::after {
-  /* subtle inner light to keep it from looking flat against the card */
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.18),
-    rgba(255, 255, 255, 0) 55%
-  );
-}
-
-/* Gradient CTA. */
-.btn-gradient {
-  background: var(--brand-gradient);
-  color: #07110d;
-  border: 1px solid rgba(189, 242, 114, 0.45);
-  border-radius: 12px;
-  box-shadow: 0px 12px 32px -8px rgba(114, 228, 194, 0.24);
+/* Fluid display + page headings */
+.vl-display {
   font-weight: 700;
-  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+  font-size: clamp(2.5rem, 1.6rem + 4vw, 4rem);
+  line-height: 1.06;
+  letter-spacing: -0.025em;
 }
-.btn-gradient:hover {
-  filter: brightness(1.05);
-  box-shadow: 0px 14px 36px -8px rgba(114, 228, 194, 0.36);
-}
-.btn-gradient:active {
-  transform: translateY(1px);
-}
-.btn-gradient:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  box-shadow: none;
+.vl-h1 {
+  font-weight: 700;
+  font-size: clamp(2rem, 1.4rem + 2.6vw, 3rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
-.btn-ghost-translucent {
-  background: rgba(255, 255, 255, 0.05);
-  color: #f8fafc;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  transition: background 120ms ease, border-color 120ms ease;
+/* Surface shadows */
+.vl-shadow-card {
+  box-shadow: var(--shadow-card);
 }
-.btn-ghost-translucent:hover {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.18);
+.vl-shadow-raised {
+  box-shadow: var(--shadow-raised);
 }
 
-/* Stacked label + input affordance — the input itself is the whole tile. */
-.field {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--card-stroke);
-  border-radius: 12px;
-  padding: 8px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  transition: border-color 120ms ease, background 120ms ease;
+/* Brand surfaces */
+.vl-forest {
+  background: var(--forest-900);
+  color: #fffcf5;
 }
-.field:focus-within {
-  border-color: rgba(189, 242, 114, 0.4);
-  background: rgba(255, 255, 255, 0.07);
-}
-.field-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  line-height: 13px;
-  letter-spacing: 0.04em;
-  color: var(--mono-label);
-  text-transform: uppercase;
-}
-.field-input {
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #f8fafc;
-  font: 400 14px/18px var(--font-sans);
-  padding: 0;
-  width: 100%;
-}
-.field-input::placeholder {
-  color: var(--mono-placeholder);
+.vl-harvest {
+  background: var(--harvest-400);
+  color: var(--ink);
 }
 
-/* Mono eyebrows — sit above big titles or as IDs */
-.eyebrow-mono {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 15px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #9ca3af;
-}
-
-/* Status pills */
-.status-pill {
+/* Status pill — tone via text + dot, not color alone (icon/label always present) */
+.vl-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
   border-radius: 999px;
-  font: 600 12px/15px var(--font-sans);
-  border: 1px solid transparent;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1rem;
+  white-space: nowrap;
 }
-.status-pill-ok {
-  background: rgba(34, 51, 27, 0.95);
-  color: #bdf272;
-  border-color: rgba(189, 242, 114, 0.22);
+
+/* Subtle entrance used sparingly; disabled under reduced-motion above */
+@keyframes vl-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.status-pill-err {
-  background: rgba(53, 21, 28, 0.95);
-  color: #fda4af;
-  border-color: rgba(253, 164, 175, 0.22);
+.vl-fade-up {
+  animation: vl-fade-up 0.4s ease both;
 }
