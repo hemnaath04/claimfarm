@@ -183,10 +183,14 @@ def get_localized_reply(claim_id: str) -> dict[str, str]:
         return {"message": "", "error": str(exc)}
 
 
-def _notify_farmer(claim, kind, *, attach_pdf: bool = False) -> None:
+def _notify_farmer(claim, kind, *, pdf_path: str | None = None) -> None:
     """Send a localized decision message (and optionally the claim PDF) back
     to the farmer over Telegram. Best-effort: a notify failure never breaks
-    the adjuster's decision."""
+    the adjuster's decision.
+
+    `pdf_path` should be the on-disk path from ClaimRow.pdf_path — the Claim
+    model itself does not carry this field.
+    """
     phone = (claim.farmer.phone or "")
     if not phone.startswith("telegram:"):
         return  # only Telegram-sourced claims have a reachable chat
@@ -200,11 +204,11 @@ def _notify_farmer(claim, kind, *, attach_pdf: bool = False) -> None:
             target_language=claim.farmer.language or "en",
         )
         telegram_client.send_message(chat_id, text)
-        if attach_pdf and getattr(claim, "pdf_path", None):
+        if pdf_path:
             try:
                 telegram_client.send_document(
                     chat_id,
-                    claim.pdf_path,
+                    pdf_path,
                     caption=f"Your filed claim {claim.claim_id}",
                     filename=f"{claim.claim_id}.pdf",
                 )
@@ -223,10 +227,15 @@ def post_decision(claim_id: str, body: DecisionPayload) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="claim not found")
 
     if body.decision == "approve":
-        claims_repo.update_status(claim_id, ClaimStatus.approved, adjuster_notes=body.notes)
+        # CLAIM-001 fix: do NOT write 'approved' status before the insurer
+        # call. Write 'submitted' optimistically so the claim is not stuck
+        # in a permanent 'approved' state if the downstream fails.
+        claims_repo.update_status(claim_id, ClaimStatus.submitted, adjuster_notes=body.notes)
         try:
             record = insurer.submit(claim)
         except Exception as exc:  # noqa: BLE001
+            # Roll back to pending_review so the adjuster can retry.
+            claims_repo.update_status(claim_id, ClaimStatus.pending_review, adjuster_notes=body.notes)
             raise HTTPException(status_code=502, detail=f"insurer call failed: {exc}") from exc
         terminal = record.get("status", "submitted")
         next_status = (
@@ -243,13 +252,20 @@ def post_decision(claim_id: str, body: DecisionPayload) -> dict[str, Any]:
             insurer_claim_id=record.get("insurer_claim_id"),
         )
         # Notify the farmer with the post-insurer outcome (+ PDF when approved).
+        # CLAIM-002 fix: fetch the ClaimRow to get the on-disk pdf_path, since
+        # the Claim model does not carry that field.
         fresh = claims_repo.get(claim_id) or claim
+        fresh_row = claims_repo.get_row(claim_id)
         kind = {
             ClaimStatus.approved: FarmerMessageKind.approved,
             ClaimStatus.rejected: FarmerMessageKind.rejected,
             ClaimStatus.submitted: FarmerMessageKind.under_review,
         }.get(next_status, FarmerMessageKind.under_review)
-        _notify_farmer(fresh, kind, attach_pdf=(next_status == ClaimStatus.approved))
+        _notify_farmer(
+            fresh,
+            kind,
+            pdf_path=fresh_row.pdf_path if (fresh_row and next_status == ClaimStatus.approved) else None,
+        )
         return {"status": next_status.value, "insurer": record}
 
     if body.decision == "reject":
@@ -296,11 +312,21 @@ def install_api(app) -> None:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
-        # Preview deploys land on *.vercel.app subdomains; allow them all.
-        allow_origin_regex=r"https://claimfarm-dashboard(-[a-z0-9-]+)?\.vercel\.app",
+        # Preview deploys land on Vercel-generated subdomains of the form:
+        #   claimfarm-dashboard-<hex8>-<team-slug>.vercel.app
+        # The hex hash anchors us to our own deployments.  The previous
+        # pattern (-[a-z0-9-]+)? matched any suffix, so an attacker who
+        # registered "claimfarm-dashboard-evil" on Vercel would get
+        # credentials forwarded — fixed in SEC-004.
+        allow_origin_regex=(
+            r"https://claimfarm-dashboard"
+            r"(-[0-9a-f]{8,}-[a-z0-9-]+)?"
+            r"\.vercel\.app"
+        ),
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        # Enumerate only the methods the dashboard actually uses (SEC-010).
+        allow_methods=["GET", "POST", "OPTIONS", "HEAD"],
+        allow_headers=["Authorization", "Content-Type", "Cookie"],
     )
 
     @app.middleware("http")

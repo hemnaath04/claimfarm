@@ -7,8 +7,9 @@ import { Copy, KeyRound, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { AppShell } from "@/components/app/app-shell";
+import { useAuthUser } from "@/lib/user-state";
 import { cn } from "@/lib/utils";
 import {
   ApiKeySummary,
@@ -18,19 +19,14 @@ import {
   revokeApiKey,
 } from "@/lib/api";
 
-const ORG = {
-  name: "Demo NGO",
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
+
+const ORG_STATIC = {
   plan: "Pilot",
   utilization: 23,
   cap: 100,
   webhookSecret: "whsec_•••••••••a91c",
 };
-
-const TEAM = [
-  { name: "Hemnaath B.", email: "you@org.org", role: "Owner" },
-  { name: "Adjuster One", email: "adjuster1@org.org", role: "Reviewer" },
-  { name: "Adjuster Two", email: "adjuster2@org.org", role: "Reviewer" },
-];
 
 const NOTIFICATION_PREFS = [
   { key: "new_claim", label: "New claim filed", desc: "When a claim is filed via WhatsApp / Telegram" },
@@ -109,16 +105,66 @@ function Stat({
   );
 }
 
+// Inline-style tooltip for disabled controls.
+function DisabledNote({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mt-1.5 text-xs text-muted-foreground">{children}</p>
+  );
+}
+
 const inputCls =
   "h-10 w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 
 export default function DashboardPage() {
+  const user = useAuthUser();
+  const displayName =
+    user && user !== null && typeof user === "object"
+      ? (user.name || user.email?.split("@")[0] || "your workspace")
+      : "your workspace";
+
   const [prefs, setPrefs] = useState<Record<string, boolean>>({
     new_claim: true,
     fraud_flag: true,
     weekly_summary: true,
     billing: true,
   });
+
+  const [upgrading, setUpgrading] = useState(false);
+
+  async function handleUpgrade() {
+    setUpgrading(true);
+    try {
+      const r = await fetch(`${API_BASE}/api/billing/checkout?plan=growth`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (r.status === 401) {
+        toast.error("Sign in to upgrade.");
+        return;
+      }
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        const detail = (body as { detail?: string }).detail;
+        toast.error(
+          detail ||
+          "Billing checkout unavailable. Set PAYMENTS_PROVIDER in your environment."
+        );
+        return;
+      }
+      const data = (await r.json()) as { url?: string };
+      if (data.url && data.url !== "stub") {
+        window.location.href = data.url;
+      } else {
+        toast.info(
+          "Billing provider not configured yet. Set PAYMENTS_PROVIDER (paddle | lemonsqueezy | razorpay) + credentials to enable checkout."
+        );
+      }
+    } catch {
+      toast.error("Could not reach the billing service. Try again.");
+    } finally {
+      setUpgrading(false);
+    }
+  }
 
   return (
     <AppShell>
@@ -127,12 +173,12 @@ export default function DashboardPage() {
           <div>
             <p className="vl-eyebrow">Workspace</p>
             <h1 className="mt-1.5 text-3xl font-bold tracking-tight text-foreground">
-              Good morning, {ORG.name}
+              Good morning, {displayName}
             </h1>
             <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-              <StatusBadge tone="success">{ORG.plan}</StatusBadge>
+              <StatusBadge tone="success">{ORG_STATIC.plan}</StatusBadge>
               <span>
-                {ORG.utilization} of {ORG.cap} free claims this month
+                {ORG_STATIC.utilization} of {ORG_STATIC.cap} free claims this month
               </span>
             </p>
           </div>
@@ -156,7 +202,7 @@ export default function DashboardPage() {
 
           <TabsContent value="overview" className="mt-6 space-y-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Stat label="Claims this month" value={ORG.utilization} hint={`of ${ORG.cap} free`} />
+              <Stat label="Claims this month" value={ORG_STATIC.utilization} hint={`of ${ORG_STATIC.cap} free`} />
               <Stat label="Approved" value={17} hint="74% approval rate" tone="good" />
               <Stat label="Fraud flags" value={2} hint="8.7% of intake" tone="warn" />
               <Stat label="Avg. decision" value="38s" hint="photo → adjuster" />
@@ -205,23 +251,29 @@ export default function DashboardPage() {
                     Pilot · Free
                   </h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Up to 100 filed claims. {ORG.utilization} used,{" "}
-                    {ORG.cap - ORG.utilization} remaining.
+                    Up to 100 filed claims. {ORG_STATIC.utilization} used,{" "}
+                    {ORG_STATIC.cap - ORG_STATIC.utilization} remaining.
                   </p>
                 </div>
-                <Button className="h-10 px-4">Upgrade to Growth</Button>
+                <Button
+                  className="h-10 px-4"
+                  disabled={upgrading}
+                  onClick={handleUpgrade}
+                >
+                  {upgrading ? "Starting checkout…" : "Upgrade to Growth"}
+                </Button>
               </div>
               <div
                 className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted"
                 role="progressbar"
-                aria-valuenow={ORG.utilization}
+                aria-valuenow={ORG_STATIC.utilization}
                 aria-valuemin={0}
-                aria-valuemax={ORG.cap}
+                aria-valuemax={ORG_STATIC.cap}
                 aria-label="Free claims used this month"
               >
                 <div
                   className="h-full rounded-full bg-primary"
-                  style={{ width: `${(ORG.utilization / ORG.cap) * 100}%` }}
+                  style={{ width: `${(ORG_STATIC.utilization / ORG_STATIC.cap) * 100}%` }}
                 />
               </div>
             </Panel>
@@ -235,8 +287,12 @@ export default function DashboardPage() {
                 upgrade.
               </p>
               <Button variant="outline" disabled className="mt-3 h-10 px-4">
-                Add payment method (set PAYMENTS_PROVIDER)
+                Add payment method
               </Button>
+              <DisabledNote>
+                Managed by your payment provider during checkout. Set{" "}
+                <code className="font-mono text-[11px]">PAYMENTS_PROVIDER</code> to enable billing.
+              </DisabledNote>
             </Panel>
 
             <Panel>
@@ -253,28 +309,16 @@ export default function DashboardPage() {
                 <h2 className="text-base font-semibold text-foreground">
                   Team members
                 </h2>
-                <Button className="h-10 px-4">Invite member</Button>
+                <Button disabled className="h-10 px-4">
+                  Invite member
+                </Button>
               </div>
-              <ul className="mt-4 divide-y divide-border">
-                {TEAM.map((m) => (
-                  <li
-                    key={m.email}
-                    className="flex items-center justify-between gap-3 py-3"
-                  >
-                    <div className="min-w-0">
-                      <div className="truncate font-medium text-foreground">
-                        {m.name}
-                      </div>
-                      <div className="truncate text-xs text-muted-foreground">
-                        {m.email}
-                      </div>
-                    </div>
-                    <span className="shrink-0 text-xs font-medium text-muted-foreground">
-                      {m.role}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <DisabledNote>
+                Team invitations are not yet available. Members can be added by having them create an account and contacting your workspace owner.
+              </DisabledNote>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Manage roles for existing members in the admin console.
+              </p>
             </Panel>
           </TabsContent>
 
@@ -296,17 +340,22 @@ export default function DashboardPage() {
                 <input
                   id="webhook-url"
                   defaultValue="https://your-insurer.example.com/intake"
-                  className={inputCls}
+                  disabled
+                  className={cn(inputCls, "opacity-60 cursor-not-allowed")}
                 />
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                   <div>
                     Signing secret:{" "}
-                    <code className="font-mono">{ORG.webhookSecret}</code>
+                    <code className="font-mono">{ORG_STATIC.webhookSecret}</code>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" disabled>
                     Add another
                   </Button>
                 </div>
+                <DisabledNote>
+                  Webhook management is not yet available in this version.
+                  Contact your workspace owner to configure outbound webhooks.
+                </DisabledNote>
               </div>
             </Panel>
           </TabsContent>
@@ -316,6 +365,9 @@ export default function DashboardPage() {
               <h2 className="text-base font-semibold text-foreground">
                 Notification preferences
               </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Changes are saved locally. Server-side preference storage is coming soon.
+              </p>
               <ul className="mt-4 divide-y divide-border">
                 {NOTIFICATION_PREFS.map((n) => (
                   <li
@@ -348,7 +400,7 @@ export default function DashboardPage() {
               </h2>
               <div className="mt-4 grid gap-4">
                 {[
-                  ["Workspace name", ORG.name],
+                  ["Workspace name", displayName],
                   ["Default region", "ap-southeast-1 (Singapore)"],
                   ["Time zone", "UTC"],
                 ].map(([label, value]) => (
@@ -356,10 +408,13 @@ export default function DashboardPage() {
                     <label className="text-sm font-medium text-foreground">
                       {label}
                     </label>
-                    <input defaultValue={value} className={inputCls} />
+                    <input disabled defaultValue={value} className={cn(inputCls, "opacity-60 cursor-not-allowed")} />
                   </div>
                 ))}
               </div>
+              <DisabledNote>
+                Workspace settings cannot be edited in this version.
+              </DisabledNote>
             </Panel>
 
             <Panel className="border-destructive/40">
@@ -367,17 +422,63 @@ export default function DashboardPage() {
                 Danger zone
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Delete your workspace. All claims, members, and audit logs are
-                permanently erased after the 30-day GDPR retention window.
+                Delete your account. All personal data is erased after the 30-day GDPR retention window.
               </p>
-              <Button variant="destructive" className="mt-3 h-10 px-4">
-                Delete workspace
-              </Button>
+              <DeleteAccountButton />
             </Panel>
           </TabsContent>
         </Tabs>
       </div>
     </AppShell>
+  );
+}
+
+function DeleteAccountButton() {
+  const [busy, setBusy] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+
+  async function handleDelete() {
+    if (!confirmed) {
+      setConfirmed(true);
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await fetch(`${API_BASE}/api/me/delete`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        toast.error((body as { detail?: string }).detail || "Delete failed. Try again.");
+        return;
+      }
+      toast.success("Account deleted. You will be signed out.");
+      setTimeout(() => { window.location.href = "/"; }, 1500);
+    } catch {
+      toast.error("Could not reach the server. Try again.");
+    } finally {
+      setBusy(false);
+      setConfirmed(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      <Button
+        variant="destructive"
+        className="h-10 px-4 w-fit"
+        disabled={busy}
+        onClick={handleDelete}
+      >
+        {busy ? "Deleting…" : confirmed ? "Click again to confirm deletion" : "Delete my account"}
+      </Button>
+      {confirmed && !busy ? (
+        <p className="text-xs text-destructive">
+          This cannot be undone. Click the button again to permanently delete your account.
+        </p>
+      ) : null}
+    </div>
   );
 }
 

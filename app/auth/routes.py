@@ -201,7 +201,8 @@ def reset_request(payload: ResetRequestPayload) -> dict:
     settings = get_settings()
     if row is not None:
         token = tokens.issue_password_reset_token(row.user_id)
-        base = settings.public_base_url.rstrip("/")
+        # Link to the FRONTEND so users land on the styled page, not raw JSON.
+        base = settings.frontend_base_url.rstrip("/")
         reset_url = f"{base}/auth/reset/confirm?token={token}"
         workers.submit(
             notifications.send_email,

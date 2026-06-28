@@ -82,9 +82,10 @@ export function SiteHeader() {
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
+            aria-controls="mobile-nav"
             className="inline-grid size-9 place-items-center rounded-lg border border-border text-foreground md:hidden"
           >
-            {open ? <X className="size-5" /> : <Menu className="size-5" />}
+            {open ? <X className="size-5" aria-hidden /> : <Menu className="size-5" aria-hidden />}
           </button>
         </div>
       </div>
@@ -92,8 +93,9 @@ export function SiteHeader() {
       {/* Mobile nav */}
       {open ? (
         <nav
+          id="mobile-nav"
           className="border-t border-border bg-background px-5 py-3 md:hidden"
-          aria-label="Mobile"
+          aria-label="Mobile navigation"
         >
           <ul className="flex flex-col">
             {NAV.map((item) => {

@@ -91,7 +91,7 @@ export function ClaimFarmLogo({
 
   if (href === null) return inner;
   return (
-    <Link href={href} className="inline-flex items-center rounded-md">
+    <Link href={href} className="inline-flex items-center rounded-md" aria-label="ClaimFarm home">
       {inner}
     </Link>
   );

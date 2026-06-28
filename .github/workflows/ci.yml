@@ -33,10 +33,13 @@ jobs:
         run: uv run python -m compileall -q app mock_insurer scripts
 
       - name: Ruff lint
-        run: uv run ruff check app mock_insurer scripts || true   # non-blocking until rules are tuned
+        # SEC-009: blocking — ruff errors must be fixed before merge.
+        run: uv run ruff check app mock_insurer scripts
 
       - name: Pytest
-        run: uv run pytest -q || true                              # non-blocking until baseline tests land
+        run: uv run pytest -q
+        # Keep the baseline green; add || true only per-test in exceptional
+        # cases tracked in a PR comment, not blanket here.
         env:
           QWEN_API_KEY: "test"
           PYTHONHASHSEED: "0"

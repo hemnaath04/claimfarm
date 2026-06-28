@@ -6,7 +6,8 @@ import { SiteFooter } from "@/components/marketing/site-footer";
 
 export const metadata: Metadata = {
   title: "About · ClaimFarm",
-  description: "Why ClaimFarm exists and the team building it.",
+  description:
+    "ClaimFarm exists because 500 million smallholder farmers are locked out of crop insurance by paperwork. We build AI-first claims infrastructure so a single photo is enough.",
 };
 
 const PRINCIPLES = [

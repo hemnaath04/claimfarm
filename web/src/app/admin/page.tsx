@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/app/app-shell";
@@ -101,6 +102,7 @@ function Section({
 }
 
 export default function AdjusterConsolePage() {
+  const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<string>("pending_review");
   const [queue, setQueue] = useState<ClaimSummary[]>([]);
   const [stats, setStats] = useState<QueueStats | null>(null);
@@ -111,17 +113,32 @@ export default function AdjusterConsolePage() {
   const [notes, setNotes] = useState<string>("");
   const [isPending, startTransition] = useTransition();
 
+  // CLAIM-005: redirect to login on any 401 so unauthenticated sessions
+  // don't land on a blank "queue load failed" error message.
+  const handle401 = useCallback(
+    (e: unknown) => {
+      if (e instanceof Error && e.message === "unauthorized") {
+        router.replace("/auth/sign-in?next=/admin");
+        return true;
+      }
+      return false;
+    },
+    [router],
+  );
+
+  // CLAIM-004: selectedId removed from deps — queue loads must not re-fire
+  // every time the user clicks a different claim.
   const loadQueue = useCallback(async () => {
     try {
       const res = await fetchQueue(statusFilter);
       setQueue(res.items);
       setStats(res.stats);
-      if (!selectedId && res.items.length > 0)
-        setSelectedId(res.items[0].claim_id);
+      setSelectedId((prev) => prev ?? (res.items[0]?.claim_id ?? null));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "queue load failed");
+      if (!handle401(e))
+        toast.error(e instanceof Error ? e.message : "queue load failed");
     }
-  }, [statusFilter, selectedId]);
+  }, [statusFilter, handle401]);
 
   useEffect(() => {
     loadQueue();
@@ -141,7 +158,8 @@ export default function AdjusterConsolePage() {
         setNotes(d.claim.adjuster_notes ?? "");
       })
       .catch((e) => {
-        if (!cancelled)
+        if (cancelled) return;
+        if (!handle401(e))
           toast.error(e instanceof Error ? e.message : "claim load failed");
       })
       .finally(() => !cancelled && setDetailLoading(false));
@@ -152,7 +170,7 @@ export default function AdjusterConsolePage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedId]);
+  }, [selectedId, handle401]);
 
   const onDecision = (decision: "approve" | "reject" | "request_info") => {
     if (!selectedId) return;
@@ -176,7 +194,8 @@ export default function AdjusterConsolePage() {
         const fresh = await fetchClaim(selectedId);
         setDetail(fresh);
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : "decision failed");
+        if (!handle401(e))
+          toast.error(e instanceof Error ? e.message : "decision failed");
       }
     });
   };

@@ -408,6 +408,51 @@ def process_inbound_telegram(
         "data:" + image_mime + ";base64," + base64.b64encode(photo_bytes).decode("ascii")
     )
 
+    # Perceptual-hash dedupe: reject photos that are visually identical to a
+    # claim already in the queue from this same chat. We compare against all
+    # stored photos for the farmer's phone identifier so even a re-submit from
+    # a new session is caught. This runs BEFORE the expensive Qwen-VL call.
+    from app.clients.perceptual_hash import average_hash, find_close_matches
+    from app.storage import photo_store as _photo_store_ref
+    from app.storage import claims_repo as _claims_repo_ref
+
+    try:
+        incoming_hash = average_hash(photo_bytes)
+        # Build corpus: (claim_id, hash) for all photos on file for this farmer.
+        farmer_phone_key = f"telegram:{chat_id}"
+        existing_rows = _claims_repo_ref.list_by_status()
+        corpus: list[tuple[str, int]] = []
+        for row in existing_rows:
+            if row.farmer_phone != farmer_phone_key:
+                continue
+            stored = _photo_store_ref.find_photo(row.claim_id)
+            if stored is None:
+                continue
+            try:
+                corpus.append((row.claim_id, average_hash(stored.read_bytes())))
+            except Exception:
+                logger.debug("could not hash stored photo for %s", row.claim_id)
+        close = find_close_matches(incoming_hash, corpus, threshold=8)
+        if close:
+            dup_id = close[0].other_id
+            logger.warning(
+                "telegram dedupe: photo from chat %s matches existing claim %s (dist=%d)",
+                chat_id, dup_id, close[0].distance,
+            )
+            try:
+                telegram_client.send_message(
+                    chat_id,
+                    f"We noticed this photo matches a claim you already submitted "
+                    f"({dup_id}). If you meant to file a new claim, please send a "
+                    "different photo of the damage.",
+                )
+            except Exception:
+                logger.exception("telegram send_message (dedupe path) failed")
+            return IntakeResult(claim_id=dup_id, status="duplicate_photo")
+    except Exception:
+        # Dedupe failure must never block claim processing.
+        logger.exception("perceptual hash dedupe failed; continuing")
+
     # Run damage + forensics + weather + draft. Any failure here (e.g. a
     # missing model API key, an upstream timeout) must not silently kill the
     # background task — the farmer should always get a reply, and the error

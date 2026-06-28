@@ -78,7 +78,11 @@ def list_keys(request: Request) -> dict:
 
 @router.delete("/{key_id}")
 def revoke_key(key_id: str, request: Request) -> dict:
-    user_id, _ = _require_user(request)
+    user_id, org_id = _require_user(request)
+    # Verify the key belongs to the caller's org before revoking.
+    rows = api_keys.list_for_org(org_id)
+    if not any(r.key_id == key_id for r in rows):
+        raise HTTPException(status_code=404, detail="key not found")
     if not api_keys.revoke(key_id):
         raise HTTPException(status_code=404, detail="key not found")
     audit(actor=user_id, action="api_key.revoked", target=key_id)

@@ -15,7 +15,7 @@ from __future__ import annotations
 import secrets
 from datetime import datetime, timedelta
 
-from sqlmodel import Field, Session, SQLModel, select
+from sqlmodel import Field, Session, SQLModel
 
 from app.storage.db import get_engine
 

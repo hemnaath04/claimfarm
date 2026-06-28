@@ -8,7 +8,11 @@ import {
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 
-export const metadata: Metadata = { title: "FAQ · ClaimFarm" };
+export const metadata: Metadata = {
+  title: "FAQ · ClaimFarm",
+  description:
+    "Answers to common questions about ClaimFarm — who it's for, language support, accuracy, fraud detection, identity verification, data storage, and pricing.",
+};
 
 const FAQS = [
   {

@@ -81,4 +81,12 @@ class SecurityHeaders(BaseHTTPMiddleware):
             "connect-src 'self' https: wss:; font-src 'self' data: https:; "
             "frame-ancestors 'none'",
         )
+        # SEC-006: HSTS — only meaningful over HTTPS (the FC / Vercel edge
+        # always terminates TLS before us), but harmless on HTTP and correct
+        # in prod.  max-age=31536000 = 1 year; includeSubDomains excluded
+        # because we share *.fcapp.run with other tenants.
+        h.setdefault("Strict-Transport-Security", "max-age=31536000")
+        # SEC-005: Remove the default "server: uvicorn" disclosure header.
+        if "server" in h:
+            del h["server"]
         return response

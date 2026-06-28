@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 
-export const metadata: Metadata = { title: "Privacy Policy · ClaimFarm" };
+export const metadata: Metadata = {
+  title: "Privacy Policy · ClaimFarm",
+  description:
+    "ClaimFarm Privacy Policy — what data we collect, how we use it, storage and security, data sharing, your rights, and retention periods.",
+};
 
 export default function PrivacyPage() {
   return (

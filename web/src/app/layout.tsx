@@ -18,6 +18,21 @@ export const metadata: Metadata = {
   },
   description:
     "Crop insurance that starts with a photo. ClaimFarm turns a farmer's photo into a filed claim — assessed by Qwen-VL, corroborated against weather, reviewed by a human adjuster.",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://claimfarm-dashboard.vercel.app",
+    siteName: "ClaimFarm",
+    title: "ClaimFarm · Photo-first crop insurance",
+    description:
+      "Crop insurance that starts with a photo. ClaimFarm turns a farmer's photo into a filed claim — assessed by Qwen-VL, corroborated against weather, reviewed by a human adjuster.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ClaimFarm · Photo-first crop insurance",
+    description:
+      "Crop insurance that starts with a photo. ClaimFarm turns a farmer's photo into a filed claim — assessed by Qwen-VL, corroborated against weather, reviewed by a human adjuster.",
+  },
 };
 
 export default function RootLayout({

@@ -281,9 +281,12 @@
 /* ---- Motion ----------------------------------------------------------- */
 
 /* Hero load entrance — pure CSS, runs without JS so above-the-fold content
-   is never blocked on hydration. Stagger via inline animation-delay. */
+   is never blocked on hydration. Stagger via inline animation-delay.
+   Uses `forwards` (not `both`) so that content stays at its natural visible
+   state during the delay period — only the animation itself fades the element
+   in. This ensures crawlers and screenshot tools see real content, not blank
+   tiles, even when animations haven't fired yet. */
 .vl-rise {
-  opacity: 0;
   animation: vl-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
@@ -318,6 +321,7 @@
    the <noscript> block in layout reveals everything when JS is off. */
 @media (prefers-reduced-motion: reduce) {
   .vl-rise,
+  .vl-fade-up,
   .reveal {
     opacity: 1 !important;
     transform: none !important;

@@ -1,9 +1,11 @@
+import hashlib
+import hmac
 import json
 import logging
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import BackgroundTasks, FastAPI, Form, Request, Response
+from fastapi import BackgroundTasks, FastAPI, Form, HTTPException, Request, Response
 
 from app import (
     api_admin,
@@ -92,8 +94,45 @@ def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def _verify_twilio_signature(
+    request: Request,
+    params: dict[str, str],
+) -> bool:
+    """Validate X-Twilio-Signature using HMAC-SHA1 over the request URL + params.
+
+    Twilio signs every webhook with HMAC-SHA1(auth_token, url + sorted_params).
+    When TWILIO_AUTH_TOKEN is unset (dev/test), validation is skipped so local
+    testing without a real Twilio account still works.
+
+    We receive the already-parsed form params so we don't need to re-read the
+    consumed stream — FastAPI's Form() parser runs before this function.
+
+    See: https://www.twilio.com/docs/usage/webhooks/webhooks-security
+    """
+    settings = get_settings()
+    auth_token = settings.twilio_auth_token
+    if not auth_token:
+        # No token configured — skip (dev mode). Log a warning once.
+        logger.warning("SEC-001: TWILIO_AUTH_TOKEN not set; skipping signature check")
+        return True
+
+    twilio_sig = request.headers.get("X-Twilio-Signature", "")
+    if not twilio_sig:
+        return False
+
+    try:
+        from twilio.request_validator import RequestValidator
+
+        validator = RequestValidator(auth_token)
+        return validator.validate(str(request.url), params, twilio_sig)
+    except Exception:
+        logger.exception("twilio signature validation failed")
+        return False
+
+
 @app.post("/twilio/inbound")
 def twilio_inbound(
+    request: Request,
     background: BackgroundTasks,
     From: str = Form(...),
     Body: str = Form(""),
@@ -107,7 +146,21 @@ def twilio_inbound(
     doesn't fire, then runs the full ClaimFarm pipeline in a background
     task. The pipeline ends with an outbound Twilio API call carrying
     the localized claim status back to the farmer.
+
+    SEC-001: Validates the X-Twilio-Signature HMAC before dispatching.
+    The parsed form params are passed to the validator so we don't need
+    to re-read the already-consumed request stream.
     """
+    form_params: dict[str, str] = {"From": From, "Body": Body, "NumMedia": NumMedia}
+    if MediaUrl0 is not None:
+        form_params["MediaUrl0"] = MediaUrl0
+    if MediaContentType0 is not None:
+        form_params["MediaContentType0"] = MediaContentType0
+
+    if not _verify_twilio_signature(request, form_params):
+        # Return 403 without TwiML so spoofed Twilio retries don't get through.
+        raise HTTPException(status_code=403, detail="invalid webhook signature")
+
     background.add_task(
         whatsapp_intake.process_inbound,
         from_phone=From,
@@ -126,6 +179,28 @@ def twilio_inbound(
     return Response(content=twiml, media_type="application/xml")
 
 
+def _verify_bird_signature(request: Request, raw_body: bytes) -> bool:
+    """Validate X-Bird-Signature-256 HMAC-SHA256.
+
+    Bird signs webhook payloads with HMAC-SHA256(bird_webhook_secret, body).
+    When BIRD_WEBHOOK_SECRET is unset, validation is skipped (dev mode).
+    """
+    settings = get_settings()
+    secret = settings.bird_webhook_secret
+    if not secret:
+        logger.warning("SEC-003: BIRD_WEBHOOK_SECRET not set; skipping signature check")
+        return True
+
+    sig_header = request.headers.get("X-Bird-Signature-256", "")
+    if not sig_header:
+        return False
+
+    expected = hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
+    # Header may be prefixed "sha256=" depending on Bird's format.
+    received = sig_header.removeprefix("sha256=")
+    return hmac.compare_digest(expected, received)
+
+
 @app.post("/bird/inbound")
 async def bird_inbound(request: Request, background: BackgroundTasks) -> dict:
     """Bird (MessageBird) WhatsApp webhook.
@@ -134,11 +209,17 @@ async def bird_inbound(request: Request, background: BackgroundTasks) -> dict:
     payload to /tmp/claimfarm_bird_payloads.jsonl on every call so we
     can inspect the actual schema once the first message arrives, then
     dispatch the pipeline against the standard intake.
+
+    SEC-003: Validates HMAC-SHA256 signature before processing.
     """
+    raw_body = await request.body()
+    if not _verify_bird_signature(request, raw_body):
+        raise HTTPException(status_code=403, detail="invalid webhook signature")
+
     try:
-        payload = await request.json()
+        payload = json.loads(raw_body)
     except Exception:
-        payload = {"raw": (await request.body()).decode("utf-8", errors="replace")}
+        payload = {"raw": raw_body.decode("utf-8", errors="replace")}
 
     try:
         BIRD_LOG.parent.mkdir(parents=True, exist_ok=True)
@@ -163,6 +244,25 @@ async def bird_inbound(request: Request, background: BackgroundTasks) -> dict:
     return {"status": "received"}
 
 
+def _verify_telegram_secret(request: Request) -> bool:
+    """Validate X-Telegram-Bot-Api-Secret-Token header.
+
+    When setWebhook is called with a `secret_token`, Telegram sends it on
+    every update as X-Telegram-Bot-Api-Secret-Token. If TELEGRAM_WEBHOOK_SECRET
+    is unset, validation is skipped (dev mode without a registered webhook).
+
+    See: https://core.telegram.org/bots/api#setwebhook
+    """
+    settings = get_settings()
+    expected = settings.telegram_webhook_secret
+    if not expected:
+        logger.warning("SEC-002: TELEGRAM_WEBHOOK_SECRET not set; skipping header check")
+        return True
+
+    received = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+    return hmac.compare_digest(expected, received)
+
+
 @app.post("/telegram/inbound")
 async def telegram_inbound(request: Request) -> dict:
     """Telegram Bot webhook. JSON `Update` payload per Telegram Bot API.
@@ -173,8 +273,14 @@ async def telegram_inbound(request: Request) -> dict:
     claim would never be filed and the farmer would never get a reply. The
     full pipeline finishes well within Telegram's webhook timeout, so we do
     the work first, then 200.
+
+    SEC-002: Validates X-Telegram-Bot-Api-Secret-Token before processing.
     """
     from starlette.concurrency import run_in_threadpool
+
+    if not _verify_telegram_secret(request):
+        # Return 403; Telegram won't retry on non-2xx which prevents replay.
+        raise HTTPException(status_code=403, detail="invalid webhook secret")
 
     try:
         update = await request.json()

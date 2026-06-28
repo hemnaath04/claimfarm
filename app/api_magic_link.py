@@ -13,14 +13,14 @@ existing one-time-token table.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, EmailStr
 
 from app import workers
 from app.auth import tokens
-from app.auth.routes import SESSION_COOKIE, _set_session_cookie, html_redirect
+from app.auth.routes import _set_session_cookie, html_redirect
 from app.auth.tokens import OneTimeTokenRow, _now
 from app.clients import notifications
 from app.config import get_settings

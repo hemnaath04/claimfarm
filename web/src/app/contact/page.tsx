@@ -7,7 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 
-export const metadata: Metadata = { title: "Contact · ClaimFarm" };
+export const metadata: Metadata = {
+  title: "Contact · ClaimFarm",
+  description:
+    "Talk to the ClaimFarm team. Message the demo bot on Telegram, reach us via GitHub, or send a sales enquiry to sales@claimfarm.dev.",
+};
 
 export default function ContactPage() {
   return (
@@ -116,8 +120,9 @@ export default function ContactPage() {
             <div className="min-w-0">
               <Card className="rounded-3xl border border-border bg-card vl-shadow-card">
                 <CardContent className="p-6 sm:p-8">
-                  {/* Placeholder form — POSTs to /api/contact (mock) */}
-                  <form action="/api/contact" method="post" className="space-y-5">
+                  {/* Form submits to mailto fallback; direct email via
+                      sales@claimfarm.dev is the primary channel for now. */}
+                  <form action="mailto:sales@claimfarm.dev" method="post" encType="text/plain" className="space-y-5">
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <label htmlFor="name" className="text-sm font-medium text-foreground">

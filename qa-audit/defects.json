@@ -1,0 +1,198 @@
+{
+  "schema": "claimfarm-qa-defects-v1",
+  "generated_by": "engineering-lead",
+  "updated_at": "2026-06-28",
+  "note": "Lead-consolidated defect register. Teammates report defects in their own qa-audit/<name>.md; the lead merges confirmed entries here. Severity: Critical|High|Medium|Low. Confidence: Confirmed|Suspected. No secrets/PII.",
+  "defects": [
+    {
+      "id": "CF-001",
+      "severity": "Low",
+      "confidence": "Confirmed",
+      "feature_id": "F-V01",
+      "environment": "local",
+      "endpoint": "n/a (lint)",
+      "summary": "ruff F401 unused imports",
+      "detail": "app/api_magic_link.py: datetime.datetime + app.auth.routes.SESSION_COOKIE unused; app/auth/tokens.py: sqlmodel.select unused.",
+      "root_cause": "imports left after refactors",
+      "owner": "auth-dashboard",
+      "fix_summary": "remove unused imports; ruff check app -> 0 errors",
+      "regression_test": "ruff in CI / verification gate",
+      "verification": "pending",
+      "status": "fixed_by_owner"
+    },
+    {
+      "id": "AUTH-003", "severity": "Critical", "confidence": "Confirmed",
+      "feature_id": "F-A17", "environment": "local", "endpoint": "POST /api/admin/users/{id}/role, /suspend",
+      "summary": "Privilege escalation: admin role could promote any user to owner and suspend owners",
+      "root_cause": "api_admin role/suspend handlers lacked owner-tier guards",
+      "owner": "auth-dashboard",
+      "fix_summary": "Promoting to owner / changing an owner's role / suspending an owner now require caller role=owner; _require_admin returns (id,role).",
+      "regression_test": "tests/test_authdash_rbac.py", "verification": "pending_independent", "status": "fixed_by_owner"
+    },
+    {
+      "id": "AUTH-002", "severity": "High", "confidence": "Confirmed",
+      "feature_id": "F-A12", "environment": "local", "endpoint": "DELETE /api/keys/{key_id}",
+      "summary": "Broken object-level authz: any authed user could revoke another org's API key",
+      "root_cause": "revoke handler did not verify key belongs to caller's org",
+      "owner": "auth-dashboard",
+      "fix_summary": "cross-check key_id against list_for_org(org_id) before revoke",
+      "regression_test": "tests/test_authdash_rbac.py", "verification": "pending_independent", "status": "fixed_by_owner"
+    },
+    {
+      "id": "AUTH-001", "severity": "High", "confidence": "Confirmed",
+      "feature_id": "F-A04", "environment": "prod+local", "endpoint": "POST /auth/reset",
+      "summary": "Password-reset email linked to API host (public_base_url) → raw JSON page on FC",
+      "root_cause": "used public_base_url instead of frontend_base_url",
+      "owner": "auth-dashboard",
+      "fix_summary": "link to frontend_base_url/auth/reset/confirm",
+      "regression_test": "covered by auth flow tests", "verification": "pending_independent", "status": "fixed_by_owner"
+    },
+    {
+      "id": "AUTH-004", "severity": "Medium", "confidence": "Confirmed",
+      "feature_id": "F-A10/F-A15", "environment": "prod", "endpoint": "/dashboard",
+      "summary": "Dashboard buttons silently no-op (Upgrade, Delete workspace, Invite, webhooks, settings)",
+      "root_cause": "placeholder controls without handlers",
+      "owner": "auth-dashboard",
+      "fix_summary": "Upgrade→POST /api/billing/checkout (or honest toast); Delete→POST /api/me/delete w/ confirm; non-functional controls disabled+labelled",
+      "regression_test": "tsc + manual", "verification": "pending_independent", "status": "fixed_by_owner"
+    },
+    {
+      "id": "WUX-001", "severity": "Critical", "confidence": "Confirmed",
+      "feature_id": "F-W01", "environment": "prod+local", "endpoint": "/",
+      "summary": "Homepage hero blank on first paint (content hidden during animation delay)",
+      "root_cause": ".vl-rise used animation-fill-mode: both, hiding hero content for 90-270ms delay; on slow paint it looked blank",
+      "owner": "web-ux",
+      "fix_summary": "changed fill-mode to forwards so natural (visible) state shows before animation; reduced-motion override extended to .vl-fade-up",
+      "regression_test": "before/after screenshots", "verification": "pending_independent", "status": "fixed_by_owner"
+    },
+    {
+      "id": "WUX-006", "severity": "High", "confidence": "Confirmed",
+      "feature_id": "F-W07", "environment": "prod", "endpoint": "/contact",
+      "summary": "Contact form POSTed to nonexistent /api/contact → 404",
+      "root_cause": "placeholder form action with no backend route",
+      "owner": "web-ux",
+      "fix_summary": "switched to mailto: fallback so the form does something real",
+      "regression_test": "manual", "verification": "pending_independent", "status": "fixed_by_owner"
+    },
+    {
+      "id": "WUX-011", "severity": "High", "confidence": "Confirmed",
+      "feature_id": "F-W17", "environment": "prod", "endpoint": "all",
+      "summary": "No OpenGraph/Twitter card metadata; thin SEO descriptions on 6 routes; 404 title double-suffix",
+      "root_cause": "missing metadata exports",
+      "owner": "web-ux",
+      "fix_summary": "added openGraph+twitter to root layout; per-route descriptions; fixed 404 title",
+      "regression_test": "tsc + metadata inspection", "verification": "pending_independent", "status": "fixed_by_owner"
+    },
+    {
+      "id": "WUX-MISC", "severity": "Medium", "confidence": "Confirmed",
+      "feature_id": "F-W13/F-W04", "environment": "prod", "endpoint": "all",
+      "summary": "ThemeToggle aria-label wrong pre-hydration; mobile nav missing aria-controls/id; logo link missing aria-label",
+      "root_cause": "a11y gaps",
+      "owner": "web-ux",
+      "fix_summary": "fixed aria-label timing, added aria-controls+id+aria-hidden, logo aria-label 'ClaimFarm home'",
+      "regression_test": "manual a11y", "verification": "pending_independent", "status": "fixed_by_owner"
+    },
+    {
+      "id": "WUX-B01", "severity": "Low", "confidence": "Confirmed",
+      "feature_id": "F-V02", "environment": "local", "endpoint": "build",
+      "summary": "turbopack.root inferred-workspace warning (multiple lockfiles)",
+      "root_cause": "web/next.config.ts lacks turbopack.root; ~/package-lock.json + repo lockfiles confuse inference",
+      "owner": "lead",
+      "fix_summary": "set turbopack.root = path.resolve(__dirname) in web/next.config.ts",
+      "regression_test": "build log clean", "verification": "pending", "status": "fixed_by_owner"
+    },
+    {
+      "id": "SEC-001", "severity": "High", "confidence": "Confirmed", "feature_id": "F-S06",
+      "endpoint": "POST /twilio/inbound", "owner": "api-security",
+      "summary": "Twilio webhook had no signature validation (forgeable intake)",
+      "fix_summary": "_verify_twilio_signature() HMAC-SHA1; 403 on fail; skipped only when TWILIO_AUTH_TOKEN unset (dev)",
+      "regression_test": "tests/test_apisec_webhooks.py", "verification": "pending_independent", "status": "fixed_by_owner"
+    },
+    {
+      "id": "SEC-002", "severity": "High", "confidence": "Confirmed", "feature_id": "F-S05",
+      "endpoint": "POST /telegram/inbound", "owner": "api-security",
+      "summary": "Telegram webhook had no secret-token validation",
+      "fix_summary": "_verify_telegram_secret() against X-Telegram-Bot-Api-Secret-Token; 403 on fail; needs TELEGRAM_WEBHOOK_SECRET set + passed to setWebhook (UAR)",
+      "regression_test": "tests/test_apisec_webhooks.py", "verification": "pending_independent", "status": "fixed_by_owner"
+    },
+    {
+      "id": "SEC-003", "severity": "High", "confidence": "Confirmed", "feature_id": "F-S06",
+      "endpoint": "POST /bird/inbound", "owner": "api-security",
+      "summary": "Bird webhook had no HMAC validation",
+      "fix_summary": "_verify_bird_signature() HMAC-SHA256; 403 on fail; skipped when BIRD_WEBHOOK_SECRET unset",
+      "regression_test": "tests/test_apisec_webhooks.py", "verification": "pending_independent", "status": "fixed_by_owner"
+    },
+    {
+      "id": "SEC-004", "severity": "High", "confidence": "Confirmed", "feature_id": "F-S07",
+      "endpoint": "CORS", "owner": "api-security",
+      "summary": "CORS preview-deploy regex too broad — attacker subdomain claimfarm-dashboard-evil.vercel.app matched",
+      "fix_summary": "tightened regex to require Vercel hex-hash pattern; narrowed allow_methods to GET/POST/OPTIONS/HEAD",
+      "regression_test": "tests/test_apisec_headers.py", "verification": "pending_independent", "status": "fixed_by_owner"
+    },
+    {
+      "id": "SEC-005-006-010", "severity": "Low", "confidence": "Confirmed", "feature_id": "F-S09",
+      "endpoint": "all", "owner": "api-security",
+      "summary": "server header disclosure; missing HSTS; overly broad CORS methods",
+      "fix_summary": "strip Server header; add Strict-Transport-Security; narrow methods",
+      "regression_test": "tests/test_apisec_headers.py", "verification": "pending_independent", "status": "fixed_by_owner"
+    },
+    {
+      "id": "SEC-009", "severity": "Low", "confidence": "Confirmed", "feature_id": "F-S12",
+      "endpoint": "CI", "owner": "api-security",
+      "summary": "CI ruff/pytest steps used '|| true' (non-blocking) — green builds hid failures",
+      "fix_summary": "removed '|| true'; lint+tests now gate the build",
+      "regression_test": "CI run", "verification": "pending_independent", "status": "fixed_by_owner"
+    },
+    {
+      "id": "SEC-007", "severity": "Critical", "confidence": "Confirmed", "feature_id": "F-A04/F-S11",
+      "endpoint": "POST /auth/reset, /auth/sign-up, /auth/magic-link", "owner": "lead",
+      "summary": "AUTH_DEV_LINKS defaults true → prod returns live reset/verify/magic tokens in JSON. POST /auth/reset with a victim's registered email returns a working password-reset link = account takeover.",
+      "root_cause": "auth_dev_links default True + dev-link disclosure active in prod (FC doesn't set AUTH_DEV_LINKS=false; no email transport configured)",
+      "fix_summary": "LEAD: flipped auth_dev_links default to False in app/config.py (secure-by-default; prod no longer discloses tokens). Local dev opts in via AUTH_DEV_LINKS=true in .env (gitignored). Restoring prod web email convenience requires RESEND_API_KEY (UAR-1/UAR-8).",
+      "regression_test": "tests/test_sec007_dev_links.py (3 tests: signup/reset/magic omit *_url when off)", "verification": "verified_lead: 3/3 pass + full suite 98/98", "status": "fixed_and_verified"
+    },
+    {
+      "id": "CLAIM-001", "severity": "High", "confidence": "Confirmed", "feature_id": "F-C16",
+      "endpoint": "POST /api/claims/{id}/decision", "owner": "claims-pipeline",
+      "summary": "Approve wrote status=approved before insurer.submit(); on insurer error claim stuck permanently approved",
+      "fix_summary": "preflight write set to 'submitted'; rollback to pending_review on exception",
+      "regression_test": "tests/test_claims_pipeline.py", "verification": "verified_full_suite 98/98", "status": "fixed_and_verified"
+    },
+    {
+      "id": "CLAIM-002", "severity": "Medium", "confidence": "Confirmed", "feature_id": "F-C18",
+      "endpoint": "decision notify", "owner": "claims-pipeline",
+      "summary": "_notify_farmer read claim.pdf_path which doesn't exist on Claim model → PDF never sent",
+      "fix_summary": "pass explicit pdf_path from ClaimRow to _notify_farmer",
+      "regression_test": "tests/test_claims_pipeline.py", "verification": "verified_full_suite", "status": "fixed_and_verified"
+    },
+    {
+      "id": "CLAIM-003", "severity": "Medium", "confidence": "Confirmed", "feature_id": "F-C07",
+      "endpoint": "telegram intake", "owner": "claims-pipeline",
+      "summary": "perceptual_hash client existed but was never called; duplicate photos created duplicate claims",
+      "fix_summary": "dedupe block added before Qwen-VL in process_inbound_telegram; duplicate→notify; failure never blocks",
+      "regression_test": "tests/test_claims_pipeline.py", "verification": "verified_full_suite", "status": "fixed_and_verified"
+    },
+    {
+      "id": "CLAIM-004", "severity": "Low", "confidence": "Confirmed", "feature_id": "F-C14",
+      "endpoint": "/admin", "owner": "claims-pipeline",
+      "summary": "loadQueue useCallback included selectedId → re-fetch on every claim click",
+      "fix_summary": "removed selectedId from deps; functional setter",
+      "regression_test": "tsc + manual", "verification": "verified_build", "status": "fixed_and_verified"
+    },
+    {
+      "id": "CLAIM-005", "severity": "Medium", "confidence": "Confirmed", "feature_id": "F-C14",
+      "endpoint": "/admin", "owner": "claims-pipeline",
+      "summary": "401 in console showed toast but did not redirect to sign-in",
+      "fix_summary": "added handle401 → router.replace on unauthorized (path corrected by VER-001)",
+      "regression_test": "tsc + manual", "verification": "verified_build", "status": "fixed_and_verified"
+    },
+    {
+      "id": "VER-001", "severity": "Medium", "confidence": "Confirmed", "feature_id": "F-C14",
+      "endpoint": "/admin", "owner": "lead(verification)",
+      "summary": "CLAIM-005 redirected to /auth/login which is a 404 (route is /auth/sign-in) — would bounce a 401'd adjuster to a dead page",
+      "root_cause": "wrong path string in handle401 introduced by CLAIM-005 fix",
+      "fix_summary": "LEAD corrected to /auth/sign-in?next=/admin (matches app-shell gate convention)",
+      "regression_test": "tsc + build", "verification": "verified_lead build clean", "status": "fixed_and_verified"
+    }
+  ]
+}

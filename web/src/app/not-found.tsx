@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "404 · Page not found",
+  title: "Page not found",
   description: "The page you're looking for doesn't exist on ClaimFarm.",
 };
 

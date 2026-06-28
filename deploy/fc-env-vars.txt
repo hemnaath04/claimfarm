@@ -31,6 +31,12 @@ OPEN_METEO_BASE=https://archive-api.open-meteo.com/v1/archive
 # ---------- Telegram ----------
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_API_BASE=https://api.telegram.org
+# High-entropy string passed to setWebhook as secret_token (SEC-002)
+TELEGRAM_WEBHOOK_SECRET=
+
+# ---------- Bird ----------
+# HMAC-SHA256 signing secret from the Bird webhook panel (SEC-003)
+BIRD_WEBHOOK_SECRET=
 
 # ---------- FastAPI / app ----------
 DATABASE_URL=sqlite:////tmp/claimfarm.sqlite

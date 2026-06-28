@@ -5,7 +5,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 
-export const metadata: Metadata = { title: "Blog · ClaimFarm" };
+export const metadata: Metadata = {
+  title: "Blog · ClaimFarm",
+  description:
+    "Engineering and product writing about how ClaimFarm works — AI damage assessment, fraud detection, multilingual claims, and shipping on Alibaba Function Compute.",
+};
 
 const POSTS = [
   {

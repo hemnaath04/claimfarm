@@ -35,9 +35,17 @@ class Settings(BaseSettings):
     bird_channel_id: str = ""
     bird_sandbox_from: str = ""
     bird_base_url: str = "https://api.bird.com"
+    # HMAC-SHA256 secret set in the Bird webhook configuration panel.
+    # When set, every inbound Bird webhook is verified against the
+    # X-Bird-Signature-256 header before the payload is processed.
+    bird_webhook_secret: str = ""
 
     telegram_bot_token: str = ""
     telegram_api_base: str = "https://api.telegram.org"
+    # Telegram allows setting a secret token on the setWebhook call; the
+    # X-Telegram-Bot-Api-Secret-Token header on every update carries it.
+    # Set this to any high-entropy string and pass it to setWebhook.
+    telegram_webhook_secret: str = ""
 
     # Identity verification (KYC + liveness)
     identity_provider: str = "mock"  # mock | persona | veriff | onfido
@@ -66,11 +74,14 @@ class Settings(BaseSettings):
     sendgrid_api_key: str = ""
     twilio_sms_from: str = ""
 
-    # When neither resend_api_key nor sendgrid_api_key is set, the auth
-    # endpoints include the verification / reset / magic-link URLs in
-    # their JSON response so the demo flow works without SMTP. Flip
-    # this off in production.
-    auth_dev_links: bool = True
+    # SEC-007: secure-by-default. When True, the auth endpoints echo the
+    # verification / reset / magic-link URLs (with live tokens) back in the
+    # JSON response. That is convenient for local dev without SMTP, but in
+    # production it is an account-takeover vector — POST /auth/reset with a
+    # victim's registered email would return a working reset link. So this
+    # defaults to FALSE; local dev opts in via AUTH_DEV_LINKS=true. In prod
+    # configure RESEND_API_KEY for real email delivery instead.
+    auth_dev_links: bool = False
 
     # Rate limiting
     rate_limit_per_minute: int = 60

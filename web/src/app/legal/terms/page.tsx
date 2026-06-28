@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 
-export const metadata: Metadata = { title: "Terms of Service · ClaimFarm" };
+export const metadata: Metadata = {
+  title: "Terms of Service · ClaimFarm",
+  description:
+    "ClaimFarm Terms of Service — account requirements, acceptable use, AI output disclaimer, identity verification, payments, and liability.",
+};
 
 export default function TermsPage() {
   return (
