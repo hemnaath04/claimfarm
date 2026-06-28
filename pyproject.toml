@@ -44,3 +44,9 @@ packages = ["app", "dashboard", "mock_insurer"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint.per-file-ignores]
+# Maintenance scripts call load_dotenv() before importing app modules so the
+# env is populated when those modules read settings at import time. That is an
+# intentional ordering, so the "import not at top of file" rule doesn't apply.
+"scripts/*" = ["E402"]
