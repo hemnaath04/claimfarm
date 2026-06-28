@@ -92,6 +92,29 @@ def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/healthz/egress")
+def healthz_egress() -> dict:
+    """Diagnostic: can the function reach the public internet? Tries a few
+    outbound hosts the pipeline depends on and reports per-host status.
+    Used to confirm/deny an FC NAT/egress problem; safe to remove later."""
+    import httpx
+
+    targets = {
+        "telegram": "https://api.telegram.org",
+        "qwen": "https://dashscope-intl.aliyuncs.com",
+        "open_meteo": "https://archive-api.open-meteo.com",
+        "example": "https://example.com",
+    }
+    out: dict[str, str] = {}
+    for name, url in targets.items():
+        try:
+            r = httpx.get(url, timeout=6.0)
+            out[name] = f"ok {r.status_code}"
+        except Exception as exc:  # noqa: BLE001
+            out[name] = f"FAIL {type(exc).__name__}: {str(exc)[:120]}"
+    return out
+
+
 @app.post("/twilio/inbound")
 def twilio_inbound(
     background: BackgroundTasks,
