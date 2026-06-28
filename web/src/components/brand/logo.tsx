@@ -2,9 +2,10 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 /**
- * "Verdant Claim" mark — a forest-green tile holding a harvest-yellow leaf
- * with a checkmark: leaf = farm, check = filed claim. Self-contained SVG,
- * scales cleanly from 20px (mobile header) to 128px (cover).
+ * ClaimFarm mark — harvest-yellow rounded tile holding a sky-blue leaf set
+ * behind a forest-green leaf with an ivory checkmark (leaf = farm, check =
+ * filed claim). Fixed brand colors so it reads on any surface. Self-contained
+ * SVG, scales cleanly from 20px (mobile header) to 128px (cover).
  */
 export function ClaimFarmMark({
   size = 32,
@@ -13,6 +14,9 @@ export function ClaimFarmMark({
   size?: number;
   className?: string;
 }) {
+  // Almond leaf, upright + centered on (20,20); the group is rotated so the
+  // tip points to the upper-right, matching the brand artwork.
+  const leaf = "M20 5.5C28.5 11.5 28.5 28.5 20 34.5C11.5 28.5 11.5 11.5 20 5.5Z";
   return (
     <svg
       width={size}
@@ -23,17 +27,19 @@ export function ClaimFarmMark({
       aria-label="ClaimFarm"
       className={className}
     >
-      <rect width="40" height="40" rx="11" fill="var(--forest-700)" />
-      {/* leaf */}
+      <rect width="40" height="40" rx="10.5" fill="#F4C95D" />
+      <g transform="rotate(-38 20 20)">
+        {/* sky-blue leaf set slightly behind */}
+        <path d={leaf} transform="translate(2.3 2.1)" fill="#7FB3D2" />
+        {/* forest-green leaf on top */}
+        <path d={leaf} fill="#1F6E4E" />
+      </g>
+      {/* ivory checkmark, near-upright over the leaf */}
       <path
-        d="M20 8C26 13 28 22 20 31C12 22 14 13 20 8Z"
-        fill="var(--harvest-400)"
-      />
-      {/* check — sits on the leaf, dark forest for strong contrast */}
-      <path
-        d="M15.6 20.4l3.2 3.2 6.6-7.8"
-        stroke="var(--forest-900)"
-        strokeWidth="2.6"
+        d="M14.8 20.6l3.6 3.6 7.2-8.4"
+        transform="rotate(-6 20 20)"
+        stroke="#FFFCF5"
+        strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
