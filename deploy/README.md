@@ -58,12 +58,13 @@ docker buildx build --platform linux/amd64 \
   --push .
 ```
 
-## Deploy
+## Deploy (first time only)
 
 In the FC 3.0 console:
 
 1. Create function → **Custom Container** runtime
-2. Image: pick the ACR image you just pushed
+2. Image: a pinned digest tag, e.g. `ghcr.io/hemnaath04/claimfarm:<sha>`
+   (never `:latest` — see note below)
 3. Port: 9000
 4. Memory: 1 GB, Timeout: 60 s
 5. Environment variables: paste the env list above
@@ -71,3 +72,32 @@ In the FC 3.0 console:
 7. Hit **Test** with `GET /healthz` — should return `{"status":"ok"}`
 
 Production URL becomes `https://<function-name>.<account-id>.<region>.fcapp.run/`.
+
+## Auto-deploy on every push (no manual console step)
+
+> Why this exists: `:latest` is a mutable tag — FC pins the *digest* at
+> deploy time and never re-pulls, so pushing a new `:latest` either goes
+> stale or "fails to be invoked". The CI step below updates FC to the new
+> **immutable per-commit digest** automatically, so you never touch the
+> console again.
+
+After the image is pushed, `.github/workflows/docker-build.yml` runs
+`deploy/fc_update_image.py`, which calls FC 3.0 `UpdateFunction` with **only**
+`customContainerConfig.image` set — a partial update, so your environment
+variables / port / timeout are preserved.
+
+One-time setup (GitHub → repo **Settings → Secrets and variables → Actions**):
+
+**Secrets:**
+- `ALIBABA_FC_ACCESS_KEY_ID` — a RAM key with `fc:UpdateFunction`
+  (the managed policy `AliyunFCFullAccess` is the easy choice)
+- `ALIBABA_FC_ACCESS_KEY_SECRET`
+
+**Variables:**
+- `FC_ACCOUNT_ID` — your Alibaba Cloud account id (e.g. `5129681027390288`)
+- `FC_REGION` — optional, defaults to `ap-southeast-1`
+- `FC_FUNCTION_NAME` — optional, defaults to `claimfarm-api`
+
+Until those secrets exist the deploy step **no-ops** (exit 0) so builds never
+fail. Once set, every `git push` to `main` builds the image and rolls FC to
+that exact commit — zero manual steps.
