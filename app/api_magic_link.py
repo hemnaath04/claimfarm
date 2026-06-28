@@ -67,8 +67,10 @@ def request_magic_link(payload: RequestPayload) -> dict:
     settings = get_settings()
     if row is not None:
         token = _issue_magic_link_token(row.user_id)
-        base = settings.public_base_url.rstrip("/")
-        consume_url = f"{base}/auth/magic-link/consume?token={token}"
+        # Link to the frontend handler (FC can't serve HTML/redirects on its
+        # default domain); the frontend page calls /consume?redirect=false.
+        base = settings.frontend_base_url.rstrip("/")
+        consume_url = f"{base}/auth/verify?magic={token}"
         # Send off the request path — the user only needs the 200 ack.
         workers.submit(
             notifications.send_email,

@@ -119,10 +119,13 @@ def sign_up(payload: SignUpPayload, request: Request, response: Response) -> dic
     )
     users_repo.upsert(row)
 
-    # Issue an email-verification token and notify (logs-only when SMTP is unset)
+    # Issue an email-verification token and notify (logs-only when SMTP is unset).
+    # The link points at the FRONTEND (not the FC backend): FC's default
+    # *.fcapp.run domain refuses to render HTML / cross-domain redirects, so
+    # the styled frontend verify page consumes the token via the JSON API.
     verify_token = tokens.issue_email_verification_token(user_id)
     settings = get_settings()
-    base = settings.public_base_url.rstrip("/")
+    base = settings.frontend_base_url.rstrip("/")
     verification_url = f"{base}/auth/verify?token={verify_token}"
     workers.submit(
         notifications.send,
@@ -228,22 +231,22 @@ def reset_confirm(payload: ConfirmResetPayload, response: Response) -> dict:
 
 
 @router.get("/verify")
-def verify_email(token: str):
-    """Mark the email verified, then bounce the browser to the styled
-    frontend verify page. Uses an HTML (client-side) redirect because FC's
-    default endpoint blocks server-side cross-domain 3xx redirects.
+def verify_email(token: str) -> dict:
+    """Consume an email-verification token. Returns JSON so the frontend
+    verify page (which fetches this) can render the result. We return JSON
+    rather than redirecting/serving HTML because FC's default endpoint
+    blocks both cross-domain redirects and HTML rendering.
     """
-    fe = get_settings().frontend_base_url.rstrip("/")
     user_id = tokens.redeem_email_verification_token(token)
     if user_id is None:
-        return html_redirect(f"{fe}/auth/verify?error=expired")
+        return {"status": "expired"}
     row = users_repo.get(user_id)
     if row is None:
-        return html_redirect(f"{fe}/auth/verify?error=unknown")
+        return {"status": "unknown"}
     row.email_verified = True
     users_repo.upsert(row)
     audit(actor=user_id, action="user.email_verified")
-    return html_redirect(f"{fe}/auth/verify?status=ok")
+    return {"status": "ok"}
 
 
 @router.get("/me")
