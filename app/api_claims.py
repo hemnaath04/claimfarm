@@ -183,8 +183,41 @@ def get_localized_reply(claim_id: str) -> dict[str, str]:
         return {"message": "", "error": str(exc)}
 
 
+def _notify_farmer(claim, kind, *, attach_pdf: bool = False) -> None:
+    """Send a localized decision message (and optionally the claim PDF) back
+    to the farmer over Telegram. Best-effort: a notify failure never breaks
+    the adjuster's decision."""
+    phone = (claim.farmer.phone or "")
+    if not phone.startswith("telegram:"):
+        return  # only Telegram-sourced claims have a reachable chat
+    chat_id = phone.split(":", 1)[1]
+    try:
+        from app.agents.multilingual import _english_template, localize
+        from app.clients import telegram_client
+
+        text = localize(
+            _english_template(kind, claim),
+            target_language=claim.farmer.language or "en",
+        )
+        telegram_client.send_message(chat_id, text)
+        if attach_pdf and getattr(claim, "pdf_path", None):
+            try:
+                telegram_client.send_document(
+                    chat_id,
+                    claim.pdf_path,
+                    caption=f"Your filed claim {claim.claim_id}",
+                    filename=f"{claim.claim_id}.pdf",
+                )
+            except Exception:
+                logger.exception("farmer PDF send failed for %s", claim.claim_id)
+    except Exception:
+        logger.exception("farmer notification failed for %s", claim.claim_id)
+
+
 @router.post("/claims/{claim_id}/decision")
 def post_decision(claim_id: str, body: DecisionPayload) -> dict[str, Any]:
+    from app.agents.multilingual import FarmerMessageKind
+
     claim = claims_repo.get(claim_id)
     if claim is None:
         raise HTTPException(status_code=404, detail="claim not found")
@@ -209,15 +242,29 @@ def post_decision(claim_id: str, body: DecisionPayload) -> dict[str, Any]:
             adjuster_notes=body.notes,
             insurer_claim_id=record.get("insurer_claim_id"),
         )
+        # Notify the farmer with the post-insurer outcome (+ PDF when approved).
+        fresh = claims_repo.get(claim_id) or claim
+        kind = {
+            ClaimStatus.approved: FarmerMessageKind.approved,
+            ClaimStatus.rejected: FarmerMessageKind.rejected,
+            ClaimStatus.submitted: FarmerMessageKind.under_review,
+        }.get(next_status, FarmerMessageKind.under_review)
+        _notify_farmer(fresh, kind, attach_pdf=(next_status == ClaimStatus.approved))
         return {"status": next_status.value, "insurer": record}
 
     if body.decision == "reject":
         claims_repo.update_status(claim_id, ClaimStatus.rejected, adjuster_notes=body.notes)
+        _notify_farmer(
+            claims_repo.get(claim_id) or claim, FarmerMessageKind.rejected
+        )
         return {"status": "rejected"}
 
     if body.decision == "request_info":
         claims_repo.update_status(
             claim_id, ClaimStatus.pending_review, adjuster_notes=body.notes
+        )
+        _notify_farmer(
+            claims_repo.get(claim_id) or claim, FarmerMessageKind.needs_more_info
         )
         return {"status": "pending_review"}
 

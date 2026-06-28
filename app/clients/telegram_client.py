@@ -42,6 +42,32 @@ def send_message(
     return r.json()
 
 
+def send_document(
+    chat_id: int | str,
+    file_path: str,
+    *,
+    caption: str | None = None,
+    filename: str | None = None,
+) -> dict:
+    """Send a file (e.g. the claim PDF) to a Telegram chat."""
+    import os
+
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(file_path)
+    data: dict = {"chat_id": str(chat_id)}
+    if caption:
+        data["caption"] = caption[:1024]
+    with open(file_path, "rb") as fh:
+        files = {
+            "document": (filename or os.path.basename(file_path), fh, "application/pdf")
+        }
+        r = httpx.post(_api("sendDocument"), data=data, files=files, timeout=30.0)
+    if r.status_code >= 400:
+        logger.warning("telegram sendDocument failed: %s %s", r.status_code, r.text[:300])
+    r.raise_for_status()
+    return r.json()
+
+
 def location_request_keyboard(button_text: str = "📍 Share my farm location") -> dict:
     """A one-tap keyboard that asks Telegram to send the user's location.
 
