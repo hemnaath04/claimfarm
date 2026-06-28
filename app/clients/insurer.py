@@ -1,4 +1,9 @@
-"""Client for the (mock) InsurerCo REST API."""
+"""Client for the (mock) InsurerCo REST API.
+
+By default this calls the bundled mock insurer **in-process** (no network),
+which is robust on Function Compute where the server's internal port is not
+8000. Set INSURER_BASE_URL to point at a real downstream carrier over HTTP.
+"""
 
 from __future__ import annotations
 
@@ -8,9 +13,9 @@ import httpx
 
 from app.models.claim import Claim
 
-# Default points at the mock_insurer sub-app mounted on the main FastAPI server
-# (see app/main.py). Override with INSURER_BASE_URL for a real downstream carrier.
-INSURER_BASE_URL = os.environ.get("INSURER_BASE_URL", "http://localhost:8000/insurer")
+# Empty by default → call the mounted mock insurer in-process. Set to a real
+# carrier base URL (e.g. https://api.insurer.example/v1) to submit over HTTP.
+INSURER_BASE_URL = os.environ.get("INSURER_BASE_URL", "").rstrip("/")
 
 
 def _submission_payload(claim: Claim, pdf_url: str | None = None) -> dict:
@@ -31,14 +36,26 @@ def _submission_payload(claim: Claim, pdf_url: str | None = None) -> dict:
 
 def submit(claim: Claim, *, pdf_url: str | None = None, base_url: str | None = None) -> dict:
     """Submit a claim to the insurer and return its decision record."""
-    url = (base_url or INSURER_BASE_URL).rstrip("/") + "/claims"
-    r = httpx.post(url, json=_submission_payload(claim, pdf_url), timeout=15.0)
-    r.raise_for_status()
-    return r.json()
+    payload = _submission_payload(claim, pdf_url)
+    target = (base_url or INSURER_BASE_URL).rstrip("/")
+    if target:
+        r = httpx.post(target + "/claims", json=payload, timeout=15.0)
+        r.raise_for_status()
+        return r.json()
+    # In-process: call the mock insurer directly — no HTTP, no port binding.
+    from mock_insurer.main import ClaimSubmission, submit_claim
+
+    record = submit_claim(ClaimSubmission(**payload))
+    return record.model_dump(mode="json")
 
 
 def get(insurer_claim_id: str, *, base_url: str | None = None) -> dict:
-    url = (base_url or INSURER_BASE_URL).rstrip("/") + f"/claims/{insurer_claim_id}"
-    r = httpx.get(url, timeout=15.0)
-    r.raise_for_status()
-    return r.json()
+    target = (base_url or INSURER_BASE_URL).rstrip("/")
+    if target:
+        r = httpx.get(target + f"/claims/{insurer_claim_id}", timeout=15.0)
+        r.raise_for_status()
+        return r.json()
+    from mock_insurer.main import get_claim
+
+    record = get_claim(insurer_claim_id)
+    return record.model_dump(mode="json")

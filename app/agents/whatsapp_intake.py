@@ -408,48 +408,66 @@ def process_inbound_telegram(
         "data:" + image_mime + ";base64," + base64.b64encode(photo_bytes).decode("ascii")
     )
 
-    # Run damage + forensics. Forensics gives us EXIF-derived GPS and capture
-    # time that we prefer over the hardcoded demo defaults when present.
+    # Run damage + forensics + weather + draft. Any failure here (e.g. a
+    # missing model API key, an upstream timeout) must not silently kill the
+    # background task — the farmer should always get a reply, and the error
+    # must be logged for the operator.
     from app.agents import photo_forensics  # local import to keep startup light
 
-    damage = assess_damage(image_data_url)
-    forensics = photo_forensics.analyze(photo_bytes, image_data_url)
+    try:
+        damage = assess_damage(image_data_url)
+        forensics = photo_forensics.analyze(photo_bytes, image_data_url)
 
-    # Location precedence: explicitly-shared farm location → EXIF GPS → demo default.
-    saved = farmer_profiles.get_location(chat_id)
-    if saved is not None:
-        lat, lon = saved
-    elif forensics.gps_lat is not None and forensics.gps_lon is not None:
-        lat, lon = forensics.gps_lat, forensics.gps_lon
-    else:
-        lat, lon = DEFAULT_LATITUDE, DEFAULT_LONGITUDE
-    claim_date = (
-        forensics.capture_time.date()
-        if forensics.capture_time is not None
-        else date.today()
-    )
+        # Location precedence: shared farm location → EXIF GPS → demo default.
+        saved = farmer_profiles.get_location(chat_id)
+        if saved is not None:
+            lat, lon = saved
+        elif forensics.gps_lat is not None and forensics.gps_lon is not None:
+            lat, lon = forensics.gps_lat, forensics.gps_lon
+        else:
+            lat, lon = DEFAULT_LATITUDE, DEFAULT_LONGITUDE
+        claim_date = (
+            forensics.capture_time.date()
+            if forensics.capture_time is not None
+            else date.today()
+        )
 
-    weather, corr = corroborate(damage, latitude=lat, longitude=lon, claim_date=claim_date)
+        weather, corr = corroborate(
+            damage, latitude=lat, longitude=lon, claim_date=claim_date
+        )
 
-    farmer = Farmer(
-        name=user_name or f"tg-{chat_id}",
-        phone=f"telegram:{chat_id}",
-        language=lang,
-        latitude=lat,
-        longitude=lon,
-        region=DEFAULT_REGION,
-        farm_area_hectares=DEFAULT_FARM_AREA_HA,
-    )
+        farmer = Farmer(
+            name=user_name or f"tg-{chat_id}",
+            phone=f"telegram:{chat_id}",
+            language=lang,
+            latitude=lat,
+            longitude=lon,
+            region=DEFAULT_REGION,
+            farm_area_hectares=DEFAULT_FARM_AREA_HA,
+        )
 
-    claim = build_claim(
-        farmer=farmer,
-        damage=damage,
-        weather=weather,
-        corroboration=corr,
-        date_of_damage=claim_date,
-        farmer_narrative=body or "",
-        forensics=forensics,
-    )
+        claim = build_claim(
+            farmer=farmer,
+            damage=damage,
+            weather=weather,
+            corroboration=corr,
+            date_of_damage=claim_date,
+            farmer_narrative=body or "",
+            forensics=forensics,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("telegram claim assessment failed")
+        try:
+            telegram_client.send_message(
+                chat_id,
+                "Sorry — something went wrong assessing your photo. Our team "
+                "has been notified. Please try again in a few minutes.",
+            )
+        except Exception:
+            logger.exception("telegram send_message (assess-fail path) failed")
+        return IntakeResult(
+            claim_id=None, status="assessment_failed", detail=str(exc)
+        )
 
     # Persist the photo bytes under the claim_id so the adjuster console can
     # render them. Attach a public reference to photo_urls. We deliberately
