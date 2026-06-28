@@ -88,5 +88,21 @@ web-ux (UX), auth-dashboard (AUTH), claims-pipeline (CLAIM), api-security (API),
 | F-V05 | Responsive checks | test | web | VER | |
 | F-V06 | Coverage matrix maintenance | test | this file | VER | |
 
+## Final classifications (all items)
+
+Detail per feature is in the owning teammate's report. Summary:
+
+**Web (F-W01–W17):** all **VERIFIED PASS** except — F-W01 **FIXED** (WUX-001 hero-blank), F-W07 **FIXED** (WUX-006 contact 404→mailto), F-W17 **FIXED** (WUX-011 OG/SEO + WUX-B01 build warning), F-W04/W13 **FIXED** (WUX-MISC a11y). Live prod re-verify of these is post-deploy (UAR-5).
+
+**Auth/Dashboard (F-A01–A19):** **VERIFIED PASS** except — F-A04 **FIXED** (AUTH-001 reset URL), F-A12 **FIXED** (AUTH-002 cross-org revoke), F-A17/A18 **FIXED** (AUTH-003 privilege escalation + RBAC matrix), F-A10 **FIXED+partly BLOCKED** (Upgrade wired; real checkout BLOCKED UAR-2), F-A15 **FIXED** (controls wired/labelled), F-A16 **N/A→mock** (real KYC BLOCKED UAR-3), F-A05/A06 email leg **BLOCKED** (UAR-1/UAR-8 email; flows themselves PASS via token/dev path).
+
+**Claims (F-C01–C18):** **VERIFIED PASS** (local, with real creds + sample image) except — F-C16 **FIXED** (CLAIM-001 rollback), F-C18 **FIXED** (CLAIM-002 PDF), F-C07 **FIXED** (CLAIM-003 dedupe wired), F-C14 **FIXED** (CLAIM-004/005 + VER-001). Live prod Telegram E2E **BLOCKED** (UAR-4 test account/safe image).
+
+**API/Security (F-S01–S12):** **VERIFIED PASS** except — F-S05/S06 **FIXED** (SEC-001/002/003 webhook signatures; enforcement BLOCKED on secrets UAR-7), F-S07 **FIXED** (SEC-004 CORS), F-S09 **FIXED** (SEC-005/006), F-S11 **FIXED** (SEC-007 token disclosure), F-S12 **FIXED** (SEC-009 CI gating). 
+
+**Verification (F-V01–V06):** **VERIFIED PASS** — 98/98 backend, tsc+build clean, prod baseline smoke, coverage matrix maintained.
+
+No remaining FAIL / TODO / UNINVESTIGATED. All non-PASS items are FIXED+verified locally or BLOCKED — USER ACTION (enumerated in USER_ACTION_REQUIRED.md).
+
 ## Known defects (seed)
-- **CF-001** (Low): ruff F401 unused imports in `app/api_magic_link.py` (2) + `app/auth/tokens.py` (1). Owner: API.
+- **CF-001** (Low): ruff F401 unused imports — FIXED (auth-dashboard).

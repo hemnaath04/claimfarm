@@ -112,9 +112,11 @@ def _verify_twilio_signature(
     settings = get_settings()
     auth_token = settings.twilio_auth_token
     if not auth_token:
-        # No token configured — skip (dev mode). Log a warning once.
-        logger.warning("SEC-001: TWILIO_AUTH_TOKEN not set; skipping signature check")
-        return True
+        # SEC-008: Twilio is not a configured channel (this deployment uses
+        # Telegram only). An unconfigured webhook must be CLOSED, not open —
+        # rejecting prevents an unauthenticated public intake surface.
+        logger.warning("SEC-008: TWILIO_AUTH_TOKEN not set; rejecting webhook")
+        return False
 
     twilio_sig = request.headers.get("X-Twilio-Signature", "")
     if not twilio_sig:
@@ -188,8 +190,10 @@ def _verify_bird_signature(request: Request, raw_body: bytes) -> bool:
     settings = get_settings()
     secret = settings.bird_webhook_secret
     if not secret:
-        logger.warning("SEC-003: BIRD_WEBHOOK_SECRET not set; skipping signature check")
-        return True
+        # SEC-008: Bird is not a configured channel (Telegram only). Reject
+        # an unconfigured webhook rather than leave it open to unsigned posts.
+        logger.warning("SEC-008: BIRD_WEBHOOK_SECRET not set; rejecting webhook")
+        return False
 
     sig_header = request.headers.get("X-Bird-Signature-256", "")
     if not sig_header:

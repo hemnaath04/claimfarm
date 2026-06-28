@@ -193,6 +193,14 @@
       "root_cause": "wrong path string in handle401 introduced by CLAIM-005 fix",
       "fix_summary": "LEAD corrected to /auth/sign-in?next=/admin (matches app-shell gate convention)",
       "regression_test": "tsc + build", "verification": "verified_lead build clean", "status": "fixed_and_verified"
+    },
+    {
+      "id": "SEC-008", "severity": "High", "confidence": "Confirmed", "feature_id": "F-S06",
+      "endpoint": "POST /twilio/inbound, /bird/inbound", "owner": "lead",
+      "summary": "Unused Twilio/Bird webhooks skipped signature validation when their secret was unset → open, unauthenticated public intake surface (this deployment uses Telegram only, so those secrets will never be set).",
+      "root_cause": "skip-when-unconfigured default left unused channels open to unsigned posts that ran the full claim pipeline",
+      "fix_summary": "LEAD: _verify_twilio_signature / _verify_bird_signature now REJECT (403) when their secret is unset, closing the unused endpoints. Telegram intentionally keeps skip-until-secret so the live bot isn't broken before TELEGRAM_WEBHOOK_SECRET is set.",
+      "regression_test": "tests/test_apisec_webhooks.py (10/10 pass)", "verification": "verified_lead 10/10", "status": "fixed_and_verified"
     }
   ]
 }
