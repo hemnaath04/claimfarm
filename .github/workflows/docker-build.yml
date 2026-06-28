@@ -77,10 +77,12 @@ jobs:
 
       - name: Update FC function image
         env:
-          ALIBABA_FC_ACCESS_KEY_ID: ${{ secrets.ALIBABA_FC_ACCESS_KEY_ID }}
-          ALIBABA_FC_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_FC_ACCESS_KEY_SECRET }}
-          FC_ACCOUNT_ID: ${{ vars.FC_ACCOUNT_ID }}
-          FC_REGION: ${{ vars.FC_REGION || 'ap-southeast-1' }}
-          FC_FUNCTION_NAME: ${{ vars.FC_FUNCTION_NAME || 'claimfarm-api' }}
+          # AK id/secret accepted from Secrets (preferred) or Variables, so a
+          # secret-vs-variable mix-up still works.
+          ALIBABA_FC_ACCESS_KEY_ID: ${{ secrets.ALIBABA_FC_ACCESS_KEY_ID || vars.ALIBABA_FC_ACCESS_KEY_ID }}
+          ALIBABA_FC_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_FC_ACCESS_KEY_SECRET || vars.ALIBABA_FC_ACCESS_KEY_SECRET }}
+          FC_ACCOUNT_ID: ${{ vars.FC_ACCOUNT_ID || secrets.FC_ACCOUNT_ID }}
+          FC_REGION: ${{ vars.FC_REGION || secrets.FC_REGION || 'ap-southeast-1' }}
+          FC_FUNCTION_NAME: ${{ vars.FC_FUNCTION_NAME || secrets.FC_FUNCTION_NAME || 'claimfarm-api' }}
           FC_IMAGE: ${{ env.GHCR_IMAGE }}:${{ github.sha }}
         run: python deploy/fc_update_image.py

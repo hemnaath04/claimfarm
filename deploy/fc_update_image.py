@@ -36,10 +36,15 @@ def main() -> int:
     image = os.environ.get("FC_IMAGE", "").strip()
 
     if not (ak and sk and account_id and image):
+        # Report which inputs are present (booleans only — never values) so a
+        # secret-vs-variable mix-up is obvious from the CI log.
         print(
-            "fc_update_image: missing ALIBABA_FC_ACCESS_KEY_ID / "
-            "ALIBABA_FC_ACCESS_KEY_SECRET / FC_ACCOUNT_ID / FC_IMAGE — "
-            "skipping FC auto-deploy (configure the GitHub secrets to enable)."
+            "fc_update_image: skipping FC auto-deploy — some inputs are empty. "
+            "Presence: "
+            f"ACCESS_KEY_ID={bool(ak)} ACCESS_KEY_SECRET={bool(sk)} "
+            f"FC_ACCOUNT_ID={bool(account_id)} FC_IMAGE={bool(image)}. "
+            "AK id/secret must be repository *Secrets*; FC_ACCOUNT_ID may be a "
+            "*Variable* or *Secret*."
         )
         return 0
 
