@@ -1,10 +1,17 @@
+import os
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Under pytest (conftest sets CLAIMFARM_TEST=1) do NOT read the developer's
+# `.env` — otherwise a real RESEND_API_KEY in `.env` leaks into the suite and
+# fires live emails (a test that delenv's the var re-exposes the file value).
+# Tests configure everything they need via env vars + defaults.
+_ENV_FILE = None if os.getenv("CLAIMFARM_TEST") else ".env"
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_ENV_FILE, extra="ignore")
 
     qwen_api_key: str = ""
     qwen_base_url: str = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"

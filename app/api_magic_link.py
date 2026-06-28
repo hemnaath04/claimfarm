@@ -73,14 +73,9 @@ def request_magic_link(payload: RequestPayload) -> dict:
         consume_url = f"{base}/auth/verify?magic={token}"
         # Send off the request path — the user only needs the 200 ack.
         workers.submit(
-            notifications.send_email,
+            notifications.send_magic_link_email,
             to=row.email,
-            subject="Your ClaimFarm sign-in link",
-            body=(
-                f"Click to sign in (expires in 15 minutes):\n"
-                f"{consume_url}\n\n"
-                "If you did not request this, ignore the message."
-            ),
+            url=consume_url,
         )
         audit(actor=row.user_id, action="auth.magic_link_requested")
         if settings.auth_dev_links and not notifications.email_transport_configured():

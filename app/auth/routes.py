@@ -128,14 +128,10 @@ def sign_up(payload: SignUpPayload, request: Request, response: Response) -> dic
     base = settings.frontend_base_url.rstrip("/")
     verification_url = f"{base}/auth/verify?token={verify_token}"
     workers.submit(
-        notifications.send,
-        kind="welcome",
-        user_id=user_id,
-        email=payload.email,
-        vars={
-            "name": payload.name or "there",
-            "verification_url": verification_url,
-        },
+        notifications.send_verify_email,
+        to=payload.email,
+        name=payload.name or "",
+        url=verification_url,
     )
 
     audit(
@@ -205,10 +201,9 @@ def reset_request(payload: ResetRequestPayload) -> dict:
         base = settings.frontend_base_url.rstrip("/")
         reset_url = f"{base}/auth/reset/confirm?token={token}"
         workers.submit(
-            notifications.send_email,
+            notifications.send_reset_email,
             to=row.email,
-            subject="Reset your ClaimFarm password",
-            body=f"Click this link to reset (expires in 1h):\n{reset_url}",
+            url=reset_url,
         )
         audit(actor=row.user_id, action="user.reset_requested")
         if settings.auth_dev_links and not notifications.email_transport_configured():

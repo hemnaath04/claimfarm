@@ -47,3 +47,6 @@ logs/
 
 # Vector store (local Chroma)
 .chroma/
+
+# Local-only frontend E2E suite (not part of the repo)
+/e2e/
