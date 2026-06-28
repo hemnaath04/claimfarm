@@ -106,7 +106,7 @@ export default function PricingPage() {
             {TIERS.map((t) => (
               <Card
                 key={t.name}
-                className={`relative rounded-xl bg-card ring-0 ${
+                className={`relative overflow-visible rounded-xl bg-card ring-0 ${
                   t.highlight
                     ? "border-2 border-forest vl-shadow-raised dark:border-success"
                     : "border border-border vl-shadow-card"
