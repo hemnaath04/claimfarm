@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
+import { Reveal } from "@/components/motion/reveal";
 
 export const metadata: Metadata = {
   title: "ClaimFarm · Insurance claims via one photo for 500M farmers",
@@ -126,22 +127,34 @@ export default function LandingPage() {
         {/* HERO */}
         <section className="vl-forest">
           <div className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
-            <div className="max-w-3xl vl-fade-up">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/90">
+            <div className="max-w-3xl">
+              <span
+                className="vl-rise inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/90"
+                style={{ animationDelay: "0ms" }}
+              >
                 <span className="size-1.5 rounded-full bg-harvest" aria-hidden />
                 Track 4 finalist · Global AI Hackathon × Qwen Cloud
               </span>
-              <h1 className="vl-display mt-6 text-white">
+              <h1
+                className="vl-display vl-rise mt-6 text-white"
+                style={{ animationDelay: "90ms" }}
+              >
                 Insurance claims for smallholder farmers, filed in 60 seconds.
               </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/80">
+              <p
+                className="vl-rise mt-6 max-w-2xl text-lg leading-relaxed text-white/80"
+                style={{ animationDelay: "180ms" }}
+              >
                 ClaimFarm turns a single WhatsApp or Telegram photo into a fully
                 filed crop-insurance claim — multimodal AI damage assessment,
                 weather corroboration, fraud detection, multilingual replies,
                 human adjuster review. Built for the 500 million farmers locked
                 out by paperwork.
               </p>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              <div
+                className="vl-rise mt-8 flex flex-wrap items-center gap-3"
+                style={{ animationDelay: "270ms" }}
+              >
                 <Button
                   render={<Link href="/auth/sign-up" />}
                   className="h-11 px-6 text-base"
@@ -172,10 +185,11 @@ export default function LandingPage() {
         <section className="border-b border-border bg-secondary">
           <div className="mx-auto max-w-[1200px] px-5 py-12 sm:px-8">
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              {STATS.map((s) => (
-                <div
+              {STATS.map((s, i) => (
+                <Reveal
                   key={s.label}
-                  className="rounded-xl border border-border bg-card p-6 vl-shadow-card"
+                  delay={i * 70}
+                  className="rounded-xl border border-border bg-card p-6 vl-shadow-card vl-lift"
                 >
                   <div className="text-3xl font-bold tabular-nums text-foreground">
                     {s.value}
@@ -183,7 +197,7 @@ export default function LandingPage() {
                   <div className="mt-2 text-xs uppercase tracking-wider text-muted-foreground">
                     {s.label}
                   </div>
-                </div>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -191,26 +205,29 @@ export default function LandingPage() {
 
         {/* HOW IT WORKS */}
         <section className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
-          <p className="vl-eyebrow">How it works</p>
-          <h2 className="vl-h1 mt-3 text-foreground">Photo in. Filed claim out.</h2>
+          <Reveal>
+            <p className="vl-eyebrow">How it works</p>
+            <h2 className="vl-h1 mt-3 text-foreground">
+              Photo in. Filed claim out.
+            </h2>
+          </Reveal>
           <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-4">
-            {STEPS.map((step) => (
-              <Card
-                key={step.n}
-                className="rounded-xl border border-border bg-card ring-0 vl-shadow-card"
-              >
-                <CardContent className="p-6">
-                  <div className="text-sm font-bold tabular-nums text-forest dark:text-success">
-                    {step.n}
-                  </div>
-                  <h3 className="mt-3 text-lg font-semibold text-foreground">
-                    {step.title}
-                  </h3>
-                  <p className="mt-2 leading-relaxed text-muted-foreground">
-                    {step.body}
-                  </p>
-                </CardContent>
-              </Card>
+            {STEPS.map((step, i) => (
+              <Reveal key={step.n} delay={i * 70}>
+                <Card className="h-full rounded-xl border border-border bg-card ring-0 vl-shadow-card vl-lift">
+                  <CardContent className="p-6">
+                    <div className="text-sm font-bold tabular-nums text-forest dark:text-success">
+                      {step.n}
+                    </div>
+                    <h3 className="mt-3 text-lg font-semibold text-foreground">
+                      {step.title}
+                    </h3>
+                    <p className="mt-2 leading-relaxed text-muted-foreground">
+                      {step.body}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Reveal>
             ))}
           </div>
         </section>
@@ -218,30 +235,31 @@ export default function LandingPage() {
         {/* FEATURES */}
         <section className="bg-muted">
           <div className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
-            <p className="vl-eyebrow">What&apos;s inside</p>
-            <h2 className="vl-h1 mt-3 text-foreground">
-              Six AI checks before a single dollar moves.
-            </h2>
+            <Reveal>
+              <p className="vl-eyebrow">What&apos;s inside</p>
+              <h2 className="vl-h1 mt-3 text-foreground">
+                Six AI checks before a single dollar moves.
+              </h2>
+            </Reveal>
             <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
-              {FEATURES.map((f) => {
+              {FEATURES.map((f, i) => {
                 const Icon = f.icon;
                 return (
-                  <Card
-                    key={f.title}
-                    className="rounded-xl border border-border bg-card ring-0 vl-shadow-card"
-                  >
-                    <CardContent className="p-6">
-                      <span className="inline-grid size-10 place-items-center rounded-lg bg-forest/10 text-forest dark:bg-success/15 dark:text-success">
-                        <Icon className="size-5" aria-hidden />
-                      </span>
-                      <h3 className="mt-4 text-lg font-semibold text-foreground">
-                        {f.title}
-                      </h3>
-                      <p className="mt-2 leading-relaxed text-muted-foreground">
-                        {f.body}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <Reveal key={f.title} delay={(i % 3) * 70}>
+                    <Card className="h-full rounded-xl border border-border bg-card ring-0 vl-shadow-card vl-lift">
+                      <CardContent className="p-6">
+                        <span className="inline-grid size-10 place-items-center rounded-lg bg-forest/10 text-forest dark:bg-success/15 dark:text-success">
+                          <Icon className="size-5" aria-hidden />
+                        </span>
+                        <h3 className="mt-4 text-lg font-semibold text-foreground">
+                          {f.title}
+                        </h3>
+                        <p className="mt-2 leading-relaxed text-muted-foreground">
+                          {f.body}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </Reveal>
                 );
               })}
             </div>
@@ -250,7 +268,7 @@ export default function LandingPage() {
 
         {/* TECH */}
         <section className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
-          <div className="rounded-3xl border border-border bg-card p-8 sm:p-12 vl-shadow-raised">
+          <Reveal className="rounded-3xl border border-border bg-card p-8 sm:p-12 vl-shadow-raised">
             <p className="vl-eyebrow">Built on</p>
             <h2 className="vl-h1 mt-3 text-foreground">
               Qwen Cloud + Alibaba Cloud, end to end.
@@ -263,13 +281,13 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Reveal>
         </section>
 
         {/* CTA */}
         <section className="vl-forest">
           <div className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
-            <div className="mx-auto max-w-2xl text-center">
+            <Reveal className="mx-auto max-w-2xl text-center">
               <h2 className="vl-h1 text-white">
                 Stop losing claims to paperwork.
               </h2>
@@ -292,7 +310,7 @@ export default function LandingPage() {
                   Talk to us
                 </Button>
               </div>
-            </div>
+            </Reveal>
           </div>
         </section>
       </main>

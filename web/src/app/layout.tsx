@@ -31,6 +31,18 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} h-full antialiased`}
     >
+      <head>
+        {/* Reveal everything if JS is unavailable so no content is hidden. */}
+        <noscript>
+          {/* eslint-disable-next-line react/no-danger */}
+          <style
+            dangerouslySetInnerHTML={{
+              __html:
+                ".reveal{opacity:1!important;transform:none!important}.vl-rise{opacity:1!important;animation:none!important}",
+            }}
+          />
+        </noscript>
+      </head>
       <body className="min-h-full">
         <ThemeProvider
           attribute="class"
