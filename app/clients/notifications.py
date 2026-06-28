@@ -106,6 +106,8 @@ def _send_email_resend(
         "html": html,
         "text": text,
     }
+    if s.resend_reply_to:
+        payload["reply_to"] = s.resend_reply_to
     if attachments:
         payload["attachments"] = attachments
     try:

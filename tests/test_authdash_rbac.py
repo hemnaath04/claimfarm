@@ -58,12 +58,30 @@ def client(tmp_path, monkeypatch):
 
 
 def _sign_up(client: TestClient, email: str, password: str = "Hunter22A!") -> dict:
-    r = client.post(
-        "/auth/sign-up",
-        json={"email": email, "password": password, "name": "Test"},
+    """Create a user directly. Open sign-up is now invite-only (403 once any
+    user exists), so these RBAC tests — which need several users — seed them
+    through the repo. Mirrors the legacy endpoint default of role=owner; tests
+    call _force_role() to adjust as needed.
+    """
+    import uuid
+
+    from app.auth import passwords
+    from app.models.user import UserRole
+    from app.storage import users_repo
+    from app.storage.users_repo import UserRow
+
+    user_id = f"usr_{uuid.uuid4().hex[:12]}"
+    users_repo.upsert(
+        UserRow(
+            user_id=user_id,
+            email=email,
+            name="Test",
+            role=UserRole.owner.value,
+            password_hash=passwords.hash_password(password),
+            email_verified=True,
+        )
     )
-    assert r.status_code == 201, r.text
-    return r.json()
+    return {"user_id": user_id}
 
 
 def _force_role(user_id: str, role: str) -> None:

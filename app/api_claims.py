@@ -214,6 +214,21 @@ def _notify_farmer(claim, kind, *, pdf_path: str | None = None) -> None:
                 )
             except Exception:
                 logger.exception("farmer PDF send failed for %s", claim.claim_id)
+        # Offer to email a PDF copy on request (Phase 4). The tap is handled by
+        # whatsapp_intake.process_telegram_callback via the webhook router.
+        try:
+            telegram_client.send_message(
+                chat_id,
+                "Would you like a PDF copy of this claim emailed to you?",
+                reply_markup=telegram_client.inline_keyboard(
+                    [
+                        [("📄 Email me a PDF copy", f"pdf:{claim.claim_id}")],
+                        [("No thanks", "pdf:no")],
+                    ]
+                ),
+            )
+        except Exception:
+            logger.exception("farmer PDF email offer failed for %s", claim.claim_id)
     except Exception:
         logger.exception("farmer notification failed for %s", claim.claim_id)
 

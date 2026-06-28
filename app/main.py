@@ -11,8 +11,10 @@ from app import (
     api_admin,
     api_billing,
     api_claims,
+    api_farmers,
     api_gdpr,
     api_identity,
+    api_invites,
     api_keys_routes,
     api_magic_link,
     logging_setup,
@@ -80,6 +82,11 @@ app.include_router(api_billing.router)
 app.include_router(api_admin.router)
 app.include_router(api_gdpr.router)
 app.include_router(api_keys_routes.router)
+# Farmer profiles (admin-only read) + invite-only access management. Importing
+# these routers also registers their SQLModel tables (farmer_profiles, invites)
+# on the shared metadata so create_all builds them at startup.
+app.include_router(api_farmers.router)
+app.include_router(api_invites.router)
 
 # Cross-cutting middleware (registration order matters — last wraps first).
 app.add_middleware(SecurityHeaders)
@@ -294,16 +301,26 @@ async def telegram_inbound(request: Request) -> dict:
     parsed = whatsapp_intake.parse_telegram_update(update)
     if parsed:
         try:
-            await run_in_threadpool(
-                whatsapp_intake.process_inbound_telegram,
-                chat_id=parsed["chat_id"],
-                user_name=parsed.get("user_name", ""),
-                body=parsed.get("body", ""),
-                photo_file_id=parsed.get("photo_file_id"),
-                mime=parsed.get("mime"),
-                location=parsed.get("location"),
-                is_start=bool(parsed.get("is_start")),
-            )
+            if parsed.get("callback_data") is not None:
+                # Inline-button tap (language choice / "email me the PDF").
+                await run_in_threadpool(
+                    whatsapp_intake.process_telegram_callback,
+                    chat_id=parsed["chat_id"],
+                    user_name=parsed.get("user_name", ""),
+                    data=parsed.get("callback_data"),
+                    callback_query_id=parsed.get("callback_query_id"),
+                )
+            else:
+                await run_in_threadpool(
+                    whatsapp_intake.process_inbound_telegram,
+                    chat_id=parsed["chat_id"],
+                    user_name=parsed.get("user_name", ""),
+                    body=parsed.get("body", ""),
+                    photo_file_id=parsed.get("photo_file_id"),
+                    mime=parsed.get("mime"),
+                    location=parsed.get("location"),
+                    is_start=bool(parsed.get("is_start")),
+                )
         except Exception:
             logger.exception("telegram pipeline failed")
 

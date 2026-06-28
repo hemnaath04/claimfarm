@@ -85,6 +85,45 @@ def remove_keyboard() -> dict:
     return {"remove_keyboard": True}
 
 
+def inline_keyboard(buttons: list[list[tuple[str, str]]]) -> dict:
+    """Build an inline keyboard markup from rows of (text, callback_data).
+
+    Telegram delivers a tap as an update with `callback_query` populated
+    (rather than `message`); see `parse_telegram_update`.
+    """
+    return {
+        "inline_keyboard": [
+            [{"text": text, "callback_data": data} for (text, data) in row]
+            for row in buttons
+        ]
+    }
+
+
+def language_inline_keyboard() -> dict:
+    """Inline keyboard offering the languages ClaimFarm localizes into."""
+    return inline_keyboard(
+        [
+            [("English", "lang:en"), ("हिन्दी", "lang:hi")],
+            [("Español", "lang:es"), ("Français", "lang:fr")],
+            [("العربية", "lang:ar"), ("中文", "lang:zh")],
+        ]
+    )
+
+
+def answer_callback_query(callback_query_id: str, text: str | None = None) -> dict:
+    """Acknowledge an inline-button tap so Telegram stops the client spinner."""
+    payload: dict = {"callback_query_id": callback_query_id}
+    if text:
+        payload["text"] = text[:200]
+    r = httpx.post(_api("answerCallbackQuery"), json=payload, timeout=15.0)
+    if r.status_code >= 400:
+        logger.warning(
+            "telegram answerCallbackQuery failed: %s %s", r.status_code, r.text[:300]
+        )
+    r.raise_for_status()
+    return r.json()
+
+
 def set_webhook(url: str) -> dict:
     """Register the inbound webhook with Telegram."""
     r = httpx.post(_api("setWebhook"), json={"url": url}, timeout=15.0)

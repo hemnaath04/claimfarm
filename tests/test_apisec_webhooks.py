@@ -8,8 +8,6 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import unittest.mock as mock
-from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
@@ -109,7 +107,7 @@ class TestTwilioSignature:
         form = "&".join(f"{k}={v.replace('+', '%2B').replace(' ', '+')}" for k, v in params.items())
         resp = client.post(
             self.ENDPOINT,
-            content=f"From=%2B15555550100&Body=hello&NumMedia=0",
+            content="From=%2B15555550100&Body=hello&NumMedia=0",
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
                 "X-Twilio-Signature": sig,

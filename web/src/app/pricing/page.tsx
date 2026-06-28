@@ -35,7 +35,7 @@ const TIERS: Tier[] = [
       "Adjuster console for 1 reviewer",
       "Community support",
     ],
-    cta: { label: "Start free", href: "/auth/sign-up" },
+    cta: { label: "Request access", href: "/contact" },
   },
   {
     name: "Growth",
@@ -51,7 +51,7 @@ const TIERS: Tier[] = [
       "Weekly anomaly + fraud report",
       "Email support, 24h SLA",
     ],
-    cta: { label: "Choose Growth", href: "/auth/sign-up?plan=growth" },
+    cta: { label: "Request access", href: "/contact" },
     highlight: true,
   },
   {

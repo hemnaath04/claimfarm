@@ -78,6 +78,9 @@ class Settings(BaseSettings):
     # Email / SMS / push transports (logged when unset)
     resend_api_key: str = ""
     resend_from: str = "ClaimFarm <onboarding@resend.dev>"
+    # Optional Reply-To. A pure no-reply with no reply path looks more spammy
+    # to filters; setting a real address improves deliverability/trust.
+    resend_reply_to: str = ""
     sendgrid_api_key: str = ""
     twilio_sms_from: str = ""
 

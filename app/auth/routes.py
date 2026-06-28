@@ -13,7 +13,7 @@ from app.auth import passwords, tokens
 from app.clients import notifications
 from app.config import get_settings
 from app.models.user import UserRole
-from app.storage import users_repo
+from app.storage import invites_repo, users_repo
 from app.storage.audit_log import record as audit
 from app.storage.users_repo import UserRow
 
@@ -29,6 +29,13 @@ class SignUpPayload(BaseModel):
     password: str = Field(min_length=8)
     name: str = ""
     org: str = ""
+
+
+class AcceptInvitePayload(BaseModel):
+    token: str
+    password: str = Field(min_length=8)
+    name: str | None = None
+    email: EmailStr | None = None
 
 
 class SignInPayload(BaseModel):
@@ -105,6 +112,15 @@ def html_redirect(url: str, *, set_session_token: str | None = None):
 
 @router.post("/sign-up", status_code=status.HTTP_201_CREATED)
 def sign_up(payload: SignUpPayload, request: Request, response: Response) -> dict:
+    # Invite-only: open sign-up is permitted ONLY to bootstrap the very first
+    # account (which becomes the owner). Once any user exists, registration is
+    # closed and new staff must be invited.
+    if list(users_repo.list_all()):
+        raise HTTPException(
+            status_code=403,
+            detail="Registration is invite-only. Ask an admin for an invitation.",
+        )
+
     existing = users_repo.get_by_email(payload.email)
     if existing is not None:
         raise HTTPException(status_code=409, detail="email already registered")
@@ -155,6 +171,50 @@ def sign_up(payload: SignUpPayload, request: Request, response: Response) -> dic
     if settings.auth_dev_links and not notifications.email_transport_configured():
         body["verification_url"] = verification_url
     return body
+
+
+@router.post("/accept-invite", status_code=status.HTTP_201_CREATED)
+def accept_invite(payload: AcceptInvitePayload, request: Request, response: Response) -> dict:
+    """Redeem an invite token: create the invited user, set their password,
+    and sign them in. The invite carries the role and (optionally) the target
+    email; if the invite has no email, the request body must supply one."""
+    invite = invites_repo.get_by_token(payload.token)
+    if invite is None or not invites_repo.is_valid(invite):
+        raise HTTPException(status_code=400, detail="invite invalid or expired")
+
+    email = (invite.email or (payload.email or "")).strip().lower()
+    if not email:
+        raise HTTPException(status_code=400, detail="email is required for this invite")
+
+    if users_repo.get_by_email(email) is not None:
+        raise HTTPException(status_code=409, detail="email already registered")
+
+    user_id = f"usr_{int(datetime.utcnow().timestamp())}_{email.split('@')[0][:8]}"
+    row = UserRow(
+        user_id=user_id,
+        email=email,
+        name=payload.name or "",
+        role=invite.role,
+        password_hash=passwords.hash_password(payload.password),
+        email_verified=True,
+    )
+    users_repo.upsert(row)
+    invites_repo.mark_used(payload.token, user_id)
+
+    audit(
+        actor=user_id,
+        action="auth.invite_accepted",
+        target=invite.invite_id,
+        metadata={"role": invite.role},
+    )
+
+    session_token = tokens.create_session(
+        user_id,
+        user_agent=request.headers.get("user-agent", "")[:255],
+        ip=request.client.host if request.client else "",
+    )
+    _set_session_cookie(response, session_token)
+    return {"user_id": user_id, "session": session_token, "role": invite.role}
 
 
 @router.post("/sign-in")

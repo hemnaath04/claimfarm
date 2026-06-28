@@ -21,10 +21,8 @@ Pipeline stages also tested:
 from __future__ import annotations
 
 import io
-import json
 import time
 from datetime import date
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -399,7 +397,6 @@ class TestTelegramDedupeIntegration:
         """A visually-identical photo for the same farmer must return
         'duplicate_photo' without calling assess_damage."""
         from app.agents.whatsapp_intake import process_inbound_telegram
-        from app.clients.perceptual_hash import average_hash
 
         img = _png_bytes((50, 100, 150))
 
@@ -421,7 +418,24 @@ class TestTelegramDedupeIntegration:
         mock_stored_path = MagicMock()
         mock_stored_path.read_bytes.return_value = img
 
+        # The farmer must be registered for a photo to reach the claim
+        # (and therefore the dedupe) path; an unregistered chat is routed
+        # into the first-run registration flow instead.
+        registered = MagicMock(
+            registration_step="complete",
+            pending_pdf_claim_id=None,
+            name="Old",
+            language="en",
+            region="",
+            village="",
+            farm_area_hectares=1.0,
+            latitude=None,
+            longitude=None,
+            email="",
+        )
+
         with (
+            patch("app.storage.farmer_repo.get_by_chat_id", return_value=registered),
             patch("app.storage.claims_repo.list_by_status", return_value=[existing_row]),
             patch("app.storage.photo_store.find_photo", return_value=mock_stored_path),
             patch("app.clients.telegram_client.download_file", return_value=(img, "image/png")),

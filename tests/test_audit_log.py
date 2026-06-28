@@ -1,6 +1,5 @@
 """Audit log writes and reads back JSONL rows."""
 
-from pathlib import Path
 
 from app.storage import audit_log
 

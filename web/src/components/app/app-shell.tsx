@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 const NAV: { href: string; label: string }[] = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/admin", label: "Adjuster" },
+  { href: "/admin/farmers", label: "Farmers" },
+  { href: "/admin/invites", label: "Invites" },
   { href: "/farmer", label: "Farmer intake" },
 ];
 
@@ -105,7 +107,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {NAV.map((item) => {
               const active =
                 pathname === item.href ||
-                (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                (item.href !== "/dashboard" &&
+                  item.href !== "/admin" &&
+                  pathname.startsWith(item.href));
               return (
                 <Link
                   key={item.href}
@@ -154,6 +158,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 const active =
                   pathname === item.href ||
                   (item.href !== "/dashboard" &&
+                    item.href !== "/admin" &&
                     pathname.startsWith(item.href));
                 return (
                   <li key={item.href}>

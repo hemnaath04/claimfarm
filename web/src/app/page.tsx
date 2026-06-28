@@ -156,10 +156,17 @@ export default function LandingPage() {
                 style={{ animationDelay: "270ms" }}
               >
                 <Button
-                  render={<Link href="/auth/sign-up" />}
+                  render={
+                    <a
+                      href="https://t.me/claimfarm_demo_bot"
+                      target="_blank"
+                      rel="noreferrer"
+                    />
+                  }
                   className="h-11 px-6 text-base"
                 >
-                  Start free <ArrowRight className="size-5" aria-hidden />
+                  File a claim on Telegram{" "}
+                  <ArrowRight className="size-5" aria-hidden />
                 </Button>
                 <Button
                   render={<Link href="/admin" />}
@@ -168,14 +175,6 @@ export default function LandingPage() {
                 >
                   See adjuster console
                 </Button>
-                <a
-                  href="https://t.me/claimfarm_demo_bot"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="ml-1 inline-flex items-center gap-1 text-sm text-white/70 transition-colors hover:text-white"
-                >
-                  Try the demo bot <ArrowRight className="size-4" aria-hidden />
-                </a>
               </div>
             </div>
           </div>
@@ -297,17 +296,24 @@ export default function LandingPage() {
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">
                 <Button
-                  render={<Link href="/auth/sign-up" />}
+                  render={
+                    <a
+                      href="https://t.me/claimfarm_demo_bot"
+                      target="_blank"
+                      rel="noreferrer"
+                    />
+                  }
                   className="h-11 px-6 text-base"
                 >
-                  Start free <ArrowRight className="size-5" aria-hidden />
+                  File a claim on Telegram{" "}
+                  <ArrowRight className="size-5" aria-hidden />
                 </Button>
                 <Button
-                  render={<Link href="/contact" />}
+                  render={<Link href="/auth/sign-in" />}
                   variant="outline"
                   className="h-11 border-white/30 bg-transparent px-6 text-base text-white hover:bg-white/10 hover:text-white"
                 >
-                  Talk to us
+                  Sign in
                 </Button>
               </div>
             </Reveal>

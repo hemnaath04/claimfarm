@@ -222,3 +222,111 @@ export async function revokeApiKey(keyId: string): Promise<void> {
   if (r.status === 401) throw new Error("unauthorized");
   if (!r.ok) throw new Error(`revoke failed: ${r.status}`);
 }
+
+// ---------- Farmer profiles (cookie-authenticated, admin-only) ----------
+
+export type Farmer = {
+  farmer_id: string;
+  name: string;
+  language: string;
+  region: string;
+  village: string;
+  crops: string[];
+  farm_area_hectares: number;
+  email: string | null;
+  phone: string | null;
+  channel: string;
+  registration_complete: boolean;
+  created_at: string | null;
+  claim_count: number;
+};
+
+export async function listFarmers(): Promise<{
+  items: Farmer[];
+  total: number;
+}> {
+  const r = await fetch(`${API_BASE}/api/farmers`, {
+    cache: "no-store",
+    credentials: "include",
+  });
+  if (r.status === 401) throw new Error("unauthorized");
+  if (!r.ok) throw new Error(`farmers load failed: ${r.status}`);
+  return r.json();
+}
+
+// ---------- Workspace invites (cookie-authenticated, owner-only) ----------
+
+export type Invite = {
+  invite_id: string;
+  email: string | null;
+  role: string;
+  created_at: string | null;
+  expires_at: string | null;
+  used_at: string | null;
+  status: string;
+};
+
+export type IssuedInvite = {
+  invite: Invite & { accept_url: string };
+  accept_url: string;
+};
+
+export async function listInvites(): Promise<Invite[]> {
+  const r = await fetch(`${API_BASE}/api/admin/invites`, {
+    cache: "no-store",
+    credentials: "include",
+  });
+  if (r.status === 401) throw new Error("unauthorized");
+  if (!r.ok) throw new Error(`list invites failed: ${r.status}`);
+  const data = (await r.json()) as { items: Invite[] };
+  return data.items;
+}
+
+export async function createInvite(body: {
+  email?: string;
+  role: string;
+}): Promise<IssuedInvite> {
+  const r = await fetch(`${API_BASE}/api/admin/invites`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (r.status === 401) throw new Error("unauthorized");
+  if (!r.ok) {
+    const err = await r.text();
+    throw new Error(`create invite failed: ${err}`);
+  }
+  return r.json();
+}
+
+export async function revokeInvite(inviteId: string): Promise<void> {
+  const r = await fetch(
+    `${API_BASE}/api/admin/invites/${encodeURIComponent(inviteId)}/revoke`,
+    {
+      method: "POST",
+      credentials: "include",
+    },
+  );
+  if (r.status === 401) throw new Error("unauthorized");
+  if (!r.ok) throw new Error(`revoke invite failed: ${r.status}`);
+}
+
+export async function acceptInvite(body: {
+  token: string;
+  password: string;
+  name: string;
+  email?: string;
+}): Promise<{ user_id: string; session?: unknown; role: string }> {
+  const r = await fetch(`${API_BASE}/auth/accept-invite`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const err = await r.text();
+    throw new Error(`accept invite failed: ${err}`);
+  }
+  return r.json();
+}

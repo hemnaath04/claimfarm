@@ -63,17 +63,17 @@ export function SiteHeader() {
             </Link>
           ) : (
             <>
-              <Link
-                href="/auth/sign-in"
+              <a
+                href="mailto:help@hemnaath.tech?subject=ClaimFarm%20access%20request"
                 className="hidden rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
               >
-                Sign in
-              </Link>
+                Request access
+              </a>
               <Link
-                href="/auth/sign-up"
+                href="/auth/sign-in"
                 className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
-                Start free
+                Sign in
               </Link>
             </>
           )}
