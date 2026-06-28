@@ -73,6 +73,36 @@ def _clear_session_cookie(response: Response) -> None:
     response.delete_cookie(SESSION_COOKIE, path="/")
 
 
+def html_redirect(url: str, *, set_session_token: str | None = None):
+    """Client-side redirect via a 200 HTML page.
+
+    Function Compute's default *.fcapp.run endpoint forbids server-side 3xx
+    redirects to an external domain (ExternalRedirectForbidden). Email-link
+    handlers (verify, magic-link) therefore return this small HTML page that
+    redirects in the browser instead. A Set-Cookie on this 200 response is
+    honored normally, so magic-link can still establish the session.
+    """
+    import json as _json
+
+    from fastapi.responses import HTMLResponse
+
+    safe = _json.dumps(url)  # JS-safe string literal
+    html = (
+        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+        f'<meta http-equiv="refresh" content="0;url={url}">'
+        "<title>Redirecting…</title></head>"
+        '<body style="font-family:Inter,system-ui,sans-serif;background:#fffcf5;'
+        'color:#191b18;display:grid;place-items:center;min-height:100dvh;margin:0">'
+        f'<p>Redirecting… <a href="{url}">Continue</a></p>'
+        f"<script>location.replace({safe})</script>"
+        "</body></html>"
+    )
+    resp = HTMLResponse(content=html)
+    if set_session_token:
+        _set_session_cookie(resp, set_session_token)
+    return resp
+
+
 @router.post("/sign-up", status_code=status.HTTP_201_CREATED)
 def sign_up(payload: SignUpPayload, request: Request, response: Response) -> dict:
     existing = users_repo.get_by_email(payload.email)
@@ -199,27 +229,21 @@ def reset_confirm(payload: ConfirmResetPayload, response: Response) -> dict:
 
 @router.get("/verify")
 def verify_email(token: str):
-    """Mark the email verified + redirect to the dashboard.
-
-    Returning a redirect (rather than JSON) is what makes "click the
-    link in your email" actually feel like a normal verify flow — the
-    user lands on the styled dashboard instead of a raw `{ok: true}`.
-    On failure we still redirect, but with a `?error=` query the
-    frontend renders as inline status.
+    """Mark the email verified, then bounce the browser to the styled
+    frontend verify page. Uses an HTML (client-side) redirect because FC's
+    default endpoint blocks server-side cross-domain 3xx redirects.
     """
-    from fastapi.responses import RedirectResponse
-
     fe = get_settings().frontend_base_url.rstrip("/")
     user_id = tokens.redeem_email_verification_token(token)
     if user_id is None:
-        return RedirectResponse(url=f"{fe}/auth/verify?error=expired", status_code=303)
+        return html_redirect(f"{fe}/auth/verify?error=expired")
     row = users_repo.get(user_id)
     if row is None:
-        return RedirectResponse(url=f"{fe}/auth/verify?error=unknown", status_code=303)
+        return html_redirect(f"{fe}/auth/verify?error=unknown")
     row.email_verified = True
     users_repo.upsert(row)
     audit(actor=user_id, action="user.email_verified")
-    return RedirectResponse(url=f"{fe}/auth/verify?status=ok", status_code=303)
+    return html_redirect(f"{fe}/auth/verify?status=ok")
 
 
 @router.get("/me")

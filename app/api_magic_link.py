@@ -16,12 +16,11 @@ import logging
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, Request, Response
-from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr
 
 from app import workers
 from app.auth import tokens
-from app.auth.routes import SESSION_COOKIE, _set_session_cookie
+from app.auth.routes import SESSION_COOKIE, _set_session_cookie, html_redirect
 from app.auth.tokens import OneTimeTokenRow, _now
 from app.clients import notifications
 from app.config import get_settings
@@ -106,15 +105,11 @@ def consume_magic_link(
         row = s.get(OneTimeTokenRow, token)
         if row is None or row.purpose != "magic_link":
             if redirect:
-                return RedirectResponse(
-                    url=f"{fe}/auth/sign-in?error=magic_invalid", status_code=303
-                )
+                return html_redirect(f"{fe}/auth/sign-in?error=magic_invalid")
             raise HTTPException(status_code=400, detail="invalid token")
         if row.consumed_at is not None or row.expires_at < _now():
             if redirect:
-                return RedirectResponse(
-                    url=f"{fe}/auth/sign-in?error=magic_expired", status_code=303
-                )
+                return html_redirect(f"{fe}/auth/sign-in?error=magic_expired")
             raise HTTPException(status_code=400, detail="token expired or used")
         row.consumed_at = _now()
         s.add(row)
@@ -124,9 +119,7 @@ def consume_magic_link(
     user = users_repo.get(user_id)
     if user is None or user.disabled:
         if redirect:
-            return RedirectResponse(
-                url=f"{fe}/auth/sign-in?error=user_missing", status_code=303
-            )
+            return html_redirect(f"{fe}/auth/sign-in?error=user_missing")
         raise HTTPException(status_code=404, detail="user not found")
     # Magic-link traffic also counts as proof of inbox ownership — verify.
     if not user.email_verified:
@@ -140,8 +133,6 @@ def consume_magic_link(
     )
     audit(actor=user_id, action="auth.magic_link_consumed")
     if redirect:
-        redirect_response = RedirectResponse(url=f"{fe}/dashboard", status_code=303)
-        _set_session_cookie(redirect_response, session_token)
-        return redirect_response
+        return html_redirect(f"{fe}/dashboard", set_session_token=session_token)
     _set_session_cookie(response, session_token)
     return {"ok": True, "user_id": user_id}
