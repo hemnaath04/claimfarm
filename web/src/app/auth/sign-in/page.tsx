@@ -25,7 +25,10 @@ export default function SignInPage() {
     try {
       await postAuthJson("/auth/sign-in", { email, password });
       toast.success("Signed in — redirecting…");
-      window.location.href = "/dashboard";
+      // Honor ?next= from the auth gate, but only same-site relative paths.
+      const next = new URLSearchParams(window.location.search).get("next");
+      const dest = next && next.startsWith("/") ? next : "/dashboard";
+      window.location.href = dest;
     } catch (err) {
       const e = err as { status?: number; detail?: string };
       const message =

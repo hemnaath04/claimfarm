@@ -123,13 +123,19 @@ export async function fetchQueue(status: string = "pending_review"): Promise<{
 }> {
   const r = await fetch(`${API_BASE}/api/claims?status=${encodeURIComponent(status)}`, {
     cache: "no-store",
+    credentials: "include",
   });
+  if (r.status === 401) throw new Error("unauthorized");
   if (!r.ok) throw new Error(`queue load failed: ${r.status}`);
   return r.json();
 }
 
 export async function fetchClaim(claimId: string): Promise<ClaimDetail> {
-  const r = await fetch(`${API_BASE}/api/claims/${claimId}`, { cache: "no-store" });
+  const r = await fetch(`${API_BASE}/api/claims/${claimId}`, {
+    cache: "no-store",
+    credentials: "include",
+  });
+  if (r.status === 401) throw new Error("unauthorized");
   if (!r.ok) throw new Error(`claim load failed: ${r.status}`);
   return r.json();
 }
@@ -137,6 +143,7 @@ export async function fetchClaim(claimId: string): Promise<ClaimDetail> {
 export async function fetchLocalizedReply(claimId: string): Promise<string> {
   const r = await fetch(`${API_BASE}/api/claims/${claimId}/localized_reply`, {
     cache: "no-store",
+    credentials: "include",
   });
   if (!r.ok) return "";
   const data = (await r.json()) as { message?: string };
@@ -150,9 +157,11 @@ export async function postDecision(
 ): Promise<Record<string, unknown>> {
   const r = await fetch(`${API_BASE}/api/claims/${claimId}/decision`, {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ decision, notes }),
   });
+  if (r.status === 401) throw new Error("unauthorized");
   if (!r.ok) {
     const err = await r.text();
     throw new Error(`decision ${decision} failed: ${err}`);

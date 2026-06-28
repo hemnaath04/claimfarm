@@ -11,20 +11,48 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from app.agents import fraud_check, past_claim_rag
 from app.agents.multilingual import status_message
+from app.auth import tokens
+from app.auth.routes import SESSION_COOKIE
 from app.clients import insurer
 from app.models.claim import ClaimStatus
-from app.storage import claims_repo, photo_store
+from app.storage import api_keys, claims_repo, photo_store
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api", tags=["adjuster"])
+
+def require_auth(request: Request) -> str:
+    """Gate the adjuster/claims API. Accepts either a signed-in session
+    cookie (the console) or a valid `Authorization: Bearer cf_live_…` API
+    key (programmatic access). Returns the acting user/owner id, or 401.
+
+    Claims contain farmer PII and damage evidence — none of these routes
+    may be reachable anonymously.
+    """
+    token = request.cookies.get(SESSION_COOKIE, "")
+    if token:
+        user_id = tokens.get_session_user(token)
+        if user_id:
+            return user_id
+
+    authz = request.headers.get("authorization", "")
+    if authz.lower().startswith("bearer "):
+        secret = authz[7:].strip()
+        row = api_keys.lookup(secret)
+        if row is not None:
+            return row.created_by_user_id or row.org_id
+
+    raise HTTPException(status_code=401, detail="authentication required")
+
+
+# Every route on this router requires authentication.
+router = APIRouter(prefix="/api", tags=["adjuster"], dependencies=[Depends(require_auth)])
 
 
 class DecisionPayload(BaseModel):

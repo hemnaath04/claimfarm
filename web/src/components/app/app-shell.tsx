@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { ClaimFarmLogo } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AuthUser, signOut, useAuthUser } from "@/lib/user-state";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const NAV: { href: string; label: string }[] = [
   { href: "/dashboard", label: "Dashboard" },
@@ -50,8 +52,45 @@ function UserPill({ user }: { user: AuthUser }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const user = useAuthUser();
   const [open, setOpen] = useState(false);
+
+  // Auth gate: send anonymous visitors to sign-in. Children (which fetch
+  // claims/PII) only render once a session is confirmed, so nothing
+  // sensitive loads for signed-out users.
+  useEffect(() => {
+    if (user === false) {
+      const next = encodeURIComponent(pathname || "/dashboard");
+      router.replace(`/auth/sign-in?next=${next}`);
+    }
+  }, [user, pathname, router]);
+
+  if (user === null || user === false) {
+    return (
+      <div className="grid min-h-dvh place-items-center bg-secondary/40 px-6">
+        <div className="text-center">
+          <ClaimFarmLogo href={null} size={34} />
+          <p className="mt-6 text-sm text-muted-foreground">
+            {user === null ? "Checking your session…" : "Sign in to continue."}
+          </p>
+          {user === false ? (
+            <Link
+              href="/auth/sign-in"
+              className={cn(buttonVariants(), "mt-4 h-10 px-5")}
+            >
+              Go to sign in
+            </Link>
+          ) : (
+            <div
+              className="mx-auto mt-4 h-1 w-24 animate-pulse rounded-full bg-muted"
+              aria-hidden
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-secondary/40">
@@ -92,21 +131,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               claimfarm.com →
             </Link>
             <ThemeToggle className="hidden sm:inline-grid" />
-            {user === null ? (
-              <div
-                className="h-9 w-24 animate-pulse rounded-lg bg-muted"
-                aria-hidden
-              />
-            ) : user === false ? (
-              <Link
-                href="/auth/sign-in"
-                className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-              >
-                Sign in
-              </Link>
-            ) : (
-              <UserPill user={user} />
-            )}
+            <UserPill user={user} />
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
