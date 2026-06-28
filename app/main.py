@@ -92,29 +92,6 @@ def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/healthz/egress")
-def healthz_egress() -> dict:
-    """Diagnostic: can the function reach the public internet? Tries a few
-    outbound hosts the pipeline depends on and reports per-host status.
-    Used to confirm/deny an FC NAT/egress problem; safe to remove later."""
-    import httpx
-
-    targets = {
-        "telegram": "https://api.telegram.org",
-        "qwen": "https://dashscope-intl.aliyuncs.com",
-        "open_meteo": "https://archive-api.open-meteo.com",
-        "example": "https://example.com",
-    }
-    out: dict[str, str] = {}
-    for name, url in targets.items():
-        try:
-            r = httpx.get(url, timeout=6.0)
-            out[name] = f"ok {r.status_code}"
-        except Exception as exc:  # noqa: BLE001
-            out[name] = f"FAIL {type(exc).__name__}: {str(exc)[:120]}"
-    return out
-
-
 @app.post("/twilio/inbound")
 def twilio_inbound(
     background: BackgroundTasks,
@@ -187,12 +164,18 @@ async def bird_inbound(request: Request, background: BackgroundTasks) -> dict:
 
 
 @app.post("/telegram/inbound")
-async def telegram_inbound(request: Request, background: BackgroundTasks) -> dict:
+async def telegram_inbound(request: Request) -> dict:
     """Telegram Bot webhook. JSON `Update` payload per Telegram Bot API.
 
-    Reliably works on the free tier — no media-access gymnastics,
-    no template requirements, no 24-hour window.
+    The pipeline runs **synchronously** (in a worker thread) before we ack.
+    On Function Compute the instance is frozen the moment the HTTP response
+    returns, so a fire-and-forget BackgroundTask would never execute — the
+    claim would never be filed and the farmer would never get a reply. The
+    full pipeline finishes well within Telegram's webhook timeout, so we do
+    the work first, then 200.
     """
+    from starlette.concurrency import run_in_threadpool
+
     try:
         update = await request.json()
     except Exception:
@@ -200,16 +183,19 @@ async def telegram_inbound(request: Request, background: BackgroundTasks) -> dic
 
     parsed = whatsapp_intake.parse_telegram_update(update)
     if parsed:
-        background.add_task(
-            whatsapp_intake.process_inbound_telegram,
-            chat_id=parsed["chat_id"],
-            user_name=parsed.get("user_name", ""),
-            body=parsed.get("body", ""),
-            photo_file_id=parsed.get("photo_file_id"),
-            mime=parsed.get("mime"),
-            location=parsed.get("location"),
-            is_start=bool(parsed.get("is_start")),
-        )
+        try:
+            await run_in_threadpool(
+                whatsapp_intake.process_inbound_telegram,
+                chat_id=parsed["chat_id"],
+                user_name=parsed.get("user_name", ""),
+                body=parsed.get("body", ""),
+                photo_file_id=parsed.get("photo_file_id"),
+                mime=parsed.get("mime"),
+                location=parsed.get("location"),
+                is_start=bool(parsed.get("is_start")),
+            )
+        except Exception:
+            logger.exception("telegram pipeline failed")
 
-    # Telegram only cares about a 200 ack
+    # Always 200 so Telegram doesn't retry/duplicate the update.
     return {"ok": True}
