@@ -15,7 +15,7 @@ from typing import Any
 
 from app.agents.claim_drafter import build_claim, render_claim_pdf
 from app.agents.damage_assessor import assess_damage
-from app.agents.multilingual import detect_language, status_message
+from app.agents.multilingual import detect_language, localize, status_message
 from app.agents.weather_corroborator import corroborate
 from app.clients import bird_client, notifications, telegram_client, twilio_client
 from app.models.claim import ClaimStatus, Farmer
@@ -390,8 +390,18 @@ _REG_LANGUAGE_NAMES = {
 }
 
 
-def _send(chat_id: int, text: str, **kwargs) -> None:
-    """Best-effort send: a transport error must never crash the webhook task."""
+def _send(chat_id: int, text: str, *, lang: str | None = None, **kwargs) -> None:
+    """Best-effort send: a transport error must never crash the webhook task.
+
+    When `lang` is a non-English code, the (English) message is translated to
+    that language first, so the bot keeps speaking the farmer's chosen language
+    through registration and beyond.
+    """
+    if lang and lang != "en":
+        try:
+            text = localize(text, target_language=lang)
+        except Exception:
+            logger.exception("localize failed; sending English")
     try:
         telegram_client.send_message(chat_id, text, **kwargs)
     except Exception:
@@ -455,12 +465,17 @@ def process_inbound_telegram(
                 chat_id,
                 f"Sent to {email} ✅" if ok
                 else "Sorry, I couldn't send that PDF. Please try again later.",
+                lang=profile.language,
             )
             return IntakeResult(claim_id=claim_id, status="pdf_emailed" if ok else "pdf_email_failed")
         # Not an email — fall through so a photo can still file a claim, but
         # nudge text-only messages back to providing an address.
         if not photo_file_id and location is None:
-            _send(chat_id, "Please send a valid email address (or send a photo to file a new claim).")
+            _send(
+                chat_id,
+                "Please send a valid email address (or send a photo to file a new claim).",
+                lang=profile.language,
+            )
             return IntakeResult(claim_id=None, status="awaiting_pdf_email")
 
     # ----- registration state machine -----
@@ -491,6 +506,7 @@ def process_inbound_telegram(
         _send(
             chat_id,
             "Got it. What village or area is your farm in?",
+            lang=profile.language,
             reply_markup=telegram_client.remove_keyboard(),
         )
         return IntakeResult(claim_id=None, status="awaiting_village")
@@ -501,20 +517,28 @@ def process_inbound_telegram(
         if village and not (profile.region or "").strip():
             fields["region"] = village
         farmer_repo.update(key, **fields)
-        _send(chat_id, "What's your primary crop (or crops)?")
+        _send(chat_id, "What's your primary crop (or crops)?", lang=profile.language)
         return IntakeResult(claim_id=None, status="awaiting_crops")
 
     if step == "awaiting_crops":
         farmer_repo.update(
             key, crops=(body or "").strip(), registration_step="awaiting_farm_size"
         )
-        _send(chat_id, "Roughly how large is your farm, in hectares? (e.g. 2.5)")
+        _send(
+            chat_id,
+            "Roughly how large is your farm, in hectares? (e.g. 2.5)",
+            lang=profile.language,
+        )
         return IntakeResult(claim_id=None, status="awaiting_farm_size")
 
     if step == "awaiting_farm_size":
         size = _parse_farm_size(body)
         if size is None:
-            _send(chat_id, "Sorry, I didn't catch a number. How many hectares? (e.g. 2 or 2.5)")
+            _send(
+                chat_id,
+                "Sorry, I didn't catch a number. How many hectares? (e.g. 2 or 2.5)",
+                lang=profile.language,
+            )
             return IntakeResult(claim_id=None, status="awaiting_farm_size")
         farmer_repo.update(
             key, farm_area_hectares=size, registration_step="awaiting_email"
@@ -523,6 +547,7 @@ def process_inbound_telegram(
             chat_id,
             "Last step: what email should I send PDF copies of your claims to? "
             'Type an address, or "skip".',
+            lang=profile.language,
         )
         return IntakeResult(claim_id=None, status="awaiting_email")
 
@@ -532,13 +557,18 @@ def process_inbound_telegram(
             if _looks_like_email(text):
                 farmer_repo.update(key, email=text)
             else:
-                _send(chat_id, 'That doesn\'t look like an email. Type a valid address, or "skip".')
+                _send(
+                    chat_id,
+                    'That doesn\'t look like an email. Type a valid address, or "skip".',
+                    lang=profile.language,
+                )
                 return IntakeResult(claim_id=None, status="awaiting_email")
         farmer_repo.update(key, registration_step="complete")
         _send(
             chat_id,
             "You're all set! 🌱 Now send a photo of the damaged crop (with a "
             "short caption) to file a claim.",
+            lang=profile.language,
         )
         return IntakeResult(claim_id=None, status="registration_complete")
 
@@ -552,6 +582,7 @@ def process_inbound_telegram(
             chat_id,
             f"Updated your farm location ({lat:.4f}, {lon:.4f}). Send a photo of "
             "the damaged crop to file a claim.",
+            lang=profile.language,
             reply_markup=telegram_client.remove_keyboard(),
         )
         return IntakeResult(claim_id=None, status="location_saved")
@@ -561,6 +592,7 @@ def process_inbound_telegram(
             chat_id,
             "Send a photo of your damaged crop (with a short caption describing "
             "what happened) and I'll file an insurance claim for you.",
+            lang=profile.language,
         )
         return IntakeResult(claim_id=None, status="awaiting_photo")
 
@@ -600,6 +632,7 @@ def _advance_language(*, chat_id: int, key: str, raw: str) -> IntakeResult:
         chat_id,
         "Great. Tap below to share your farm location (used for weather "
         'verification), or type "skip".',
+        lang=code,
         reply_markup=telegram_client.location_request_keyboard(),
     )
     return IntakeResult(claim_id=None, status="awaiting_location")
@@ -831,13 +864,15 @@ def process_telegram_callback(
 
     # "No thanks" on the PDF offer.
     if data == "pdf:no":
-        _send(chat_id, "No problem.")
+        prof = farmer_repo.get_by_chat_id(key)
+        _send(chat_id, "No problem.", lang=prof.language if prof else None)
         return IntakeResult(claim_id=None, status="pdf_declined")
 
     # "Email me a PDF copy" on a decided claim.
     if data.startswith("pdf:"):
         claim_id = data.split(":", 1)[1].strip()
         profile = farmer_repo.get_by_chat_id(key)
+        lang = profile.language if profile else None
         email = (profile.email or "").strip() if profile else ""
         if email:
             ok = _email_claim_pdf(
@@ -847,11 +882,12 @@ def process_telegram_callback(
                 chat_id,
                 f"Sent to {email} ✅" if ok
                 else "Sorry, I couldn't send that PDF. Please try again later.",
+                lang=lang,
             )
             return IntakeResult(claim_id=claim_id, status="pdf_emailed" if ok else "pdf_email_failed")
         # No email on file — stash the claim and ask for one.
         farmer_repo.set_pending_pdf(key, claim_id)
-        _send(chat_id, "What email should I send it to?")
+        _send(chat_id, "What email should I send it to?", lang=lang)
         return IntakeResult(claim_id=claim_id, status="awaiting_pdf_email")
 
     logger.warning("telegram callback: unhandled data %r", data)
