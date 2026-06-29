@@ -21,6 +21,7 @@ dependencies = [
     "jinja2>=3.1",
     "streamlit>=1.40",
     "sqlmodel>=0.0.22",
+    "psycopg2-binary>=2.9",    # Postgres driver for durable DATABASE_URL (Neon/Supabase)
     "python-dotenv>=1.0",
     "chromadb>=1.5.9",
     "argon2-cffi>=25.1.0",
