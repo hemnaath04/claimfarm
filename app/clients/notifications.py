@@ -8,9 +8,11 @@ APNs/FCM for push — and fall through to logging when not configured.
 
 from __future__ import annotations
 
+import base64
 import logging
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -19,6 +21,27 @@ from app.clients import email_layout
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+
+_LOGO_PATH = Path(__file__).resolve().parent.parent / "assets" / "claimfarm-mark.png"
+_logo_b64_cache: str | None = None
+
+
+def _logo_attachment() -> dict[str, Any] | None:
+    """The brand mark as an inline (cid) Resend attachment, base64-cached."""
+    global _logo_b64_cache
+    try:
+        if _logo_b64_cache is None:
+            _logo_b64_cache = base64.b64encode(_LOGO_PATH.read_bytes()).decode("ascii")
+        return {
+            "filename": "claimfarm-mark.png",
+            "content": _logo_b64_cache,
+            "content_type": "image/png",
+            "content_id": "claimfarm-logo",
+        }
+    except Exception:
+        logger.exception("could not load inline logo at %s", _LOGO_PATH)
+        return None
 
 
 def email_transport_configured() -> bool:
@@ -108,8 +131,16 @@ def _send_email_resend(
     }
     if s.resend_reply_to:
         payload["reply_to"] = s.resend_reply_to
+    # Embed the brand logo inline (cid:claimfarm-logo) so the header mark shows
+    # without the client's "display images" prompt, then any caller attachments.
+    all_attachments: list[dict[str, Any]] = []
+    logo = _logo_attachment()
+    if logo:
+        all_attachments.append(logo)
     if attachments:
-        payload["attachments"] = attachments
+        all_attachments.extend(attachments)
+    if all_attachments:
+        payload["attachments"] = all_attachments
     try:
         r = httpx.post(
             "https://api.resend.com/emails",
