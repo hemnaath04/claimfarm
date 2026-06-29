@@ -80,7 +80,7 @@ const STEPS = [
   {
     n: "04",
     title: "Insurer receives a clean claim",
-    body: "A pre-filled PDF claim, evidence-stamped, lands in the insurer's intake — ready to pay out.",
+    body: "A pre-filled PDF claim, evidence-stamped, lands in the insurer's intake, ready to pay out.",
   },
 ];
 
@@ -146,7 +146,7 @@ export default function LandingPage() {
                 style={{ animationDelay: "180ms" }}
               >
                 ClaimFarm turns a single WhatsApp or Telegram photo into a fully
-                filed crop-insurance claim — multimodal AI damage assessment,
+                filed crop-insurance claim: multimodal AI damage assessment,
                 weather corroboration, fraud detection, multilingual replies,
                 human adjuster review. Built for the 500 million farmers locked
                 out by paperwork.
@@ -291,7 +291,7 @@ export default function LandingPage() {
                 Stop losing claims to paperwork.
               </h2>
               <p className="mt-4 text-lg leading-relaxed text-white/80">
-                Smallholder farmers don&apos;t need an app — they have WhatsApp.
+                Smallholder farmers don&apos;t need an app. They have WhatsApp.
                 Plug ClaimFarm in and your insurer intake speaks photo.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">

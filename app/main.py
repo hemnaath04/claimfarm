@@ -181,7 +181,7 @@ def twilio_inbound(
     twiml = (
         '<?xml version="1.0" encoding="UTF-8"?>'
         "<Response>"
-        "<Message>Got your photo. Hold on while we assess the damage — "
+        "<Message>Got your photo. Hold on while we assess the damage. "
         "we'll reply in about a minute.</Message>"
         "</Response>"
     )

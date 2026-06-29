@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>ClaimFarm — Crop Insurance Claim {{ claim.claim_id }}</title>
+<title>ClaimFarm Crop Insurance Claim {{ claim.claim_id }}</title>
 <style>
   @page { size: A4; margin: 18mm 16mm; }
   body { font-family: "Helvetica", "Arial", sans-serif; color: #1a1a1a; font-size: 10.5pt; line-height: 1.45; }
@@ -43,7 +43,7 @@
   <tr><td class="k">Name</td><td class="v">{{ claim.farmer.name }}</td></tr>
   <tr><td class="k">Phone</td><td class="v">{{ claim.farmer.phone }}</td></tr>
   <tr><td class="k">Preferred language</td><td class="v">{{ claim.farmer.language }}</td></tr>
-  <tr><td class="k">Region</td><td class="v">{{ claim.farmer.region or "—" }}</td></tr>
+  <tr><td class="k">Region</td><td class="v">{{ claim.farmer.region or "N/A" }}</td></tr>
   <tr><td class="k">Coordinates</td><td class="v">{{ "%.5f"|format(claim.farmer.latitude) }}, {{ "%.5f"|format(claim.farmer.longitude) }}</td></tr>
   <tr><td class="k">Farm area</td><td class="v">{{ claim.farmer.farm_area_hectares }} hectares</td></tr>
 </table>
@@ -52,7 +52,7 @@
 <table>
   <tr><td class="k">Crop</td><td class="v">{{ claim.crop_type }}</td></tr>
   <tr><td class="k">Date of damage</td><td class="v">{{ claim.date_of_damage.isoformat() }}</td></tr>
-  <tr><td class="k">Farmer narrative</td><td class="v">{{ claim.farmer_narrative or "—" }}</td></tr>
+  <tr><td class="k">Farmer narrative</td><td class="v">{{ claim.farmer_narrative or "N/A" }}</td></tr>
   <tr><td class="k">Estimated loss (USD)</td><td class="v">${{ "%.2f"|format(claim.estimated_loss_usd) }}</td></tr>
 </table>
 

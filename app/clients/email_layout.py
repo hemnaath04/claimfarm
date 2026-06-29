@@ -112,7 +112,7 @@ def render_email(
                   font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;">
      <p style="margin:0;font-size:12px;line-height:1.5;color:{MUTED};">
        ClaimFarm · Photo-first crop insurance for smallholder farmers.<br>
-       This is an automated message — please don't reply directly.
+       This is an automated message; please don't reply directly.
      </p>
    </td></tr>
   </table>
@@ -128,7 +128,7 @@ def render_plaintext(heading: str, blocks: list[str], button: tuple[str, str] | 
     lines.extend(blocks)
     if button is not None:
         lines += ["", f"{button[0]}: {button[1]}"]
-    lines += ["", "— ClaimFarm"]
+    lines += ["", "ClaimFarm"]
     return "\n".join(lines)
 
 

@@ -166,7 +166,7 @@ TEMPLATES = {
             "Thanks for creating a ClaimFarm pilot account. Your first 100 "
             "claims are on us. Verify your email to start filing:\n\n"
             "{verification_url}\n\n"
-            "— ClaimFarm"
+            "ClaimFarm"
         ),
     },
     "claim_filed": {
@@ -236,7 +236,7 @@ def send_reset_email(*, to: str, url: str) -> NotificationResult:
         heading="Reset your password",
         blocks=blocks,
         button=("Reset password", url),
-        footnote="Didn't ask for this? Your password is unchanged — you can ignore this email.",
+        footnote="Didn't ask for this? Your password is unchanged, so you can ignore this email.",
     )
     text = email_layout.render_plaintext("Reset your password", blocks, ("Reset password", url))
     return send_email(to=to, subject="Reset your ClaimFarm password", body=text, html=html)
@@ -269,7 +269,7 @@ def send_invite_email(*, to: str, inviter: str, role: str, url: str) -> Notifica
         heading="You're invited to ClaimFarm",
         blocks=blocks,
         button=("Accept invitation", url),
-        footnote="If you weren't expecting this, you can ignore the email — the invite stays unused.",
+        footnote="If you weren't expecting this, you can ignore the email; the invite stays unused.",
     )
     text = email_layout.render_plaintext("You're invited to ClaimFarm", blocks, ("Accept invitation", url))
     return send_email(to=to, subject="You're invited to ClaimFarm", body=text, html=html)
@@ -284,7 +284,7 @@ def send_claim_pdf_email(
     blocks = [
         f"Hi {farmer_name}," if farmer_name else "Hi,",
         f"Attached is the PDF summary for your crop-insurance claim {claim_id}.",
-        "Keep it for your records — it lists the assessed damage, the weather "
+        "Keep it for your records. It lists the assessed damage, the weather "
         "check, and the current claim status.",
     ]
     html = email_layout.render_email(

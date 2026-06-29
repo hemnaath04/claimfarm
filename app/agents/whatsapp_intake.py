@@ -431,7 +431,7 @@ def process_inbound_telegram(
             farmer_repo.update(key, registration_step="awaiting_name")
         _send(
             chat_id,
-            "🌱 Welcome to ClaimFarm — crop-insurance claims by photo, in your "
+            "🌱 Welcome to ClaimFarm. Crop-insurance claims by photo, in your "
             "own language.\n\n"
             "Let's set up your account first (takes under a minute). "
             "What's your name?",
@@ -454,7 +454,7 @@ def process_inbound_telegram(
             _send(
                 chat_id,
                 f"Sent to {email} ✅" if ok
-                else "Sorry — I couldn't send that PDF. Please try again later.",
+                else "Sorry, I couldn't send that PDF. Please try again later.",
             )
             return IntakeResult(claim_id=claim_id, status="pdf_emailed" if ok else "pdf_email_failed")
         # Not an email — fall through so a photo can still file a claim, but
@@ -739,7 +739,7 @@ def _file_telegram_claim(
         try:
             telegram_client.send_message(
                 chat_id,
-                "Sorry — something went wrong assessing your photo. Our team "
+                "Sorry, something went wrong assessing your photo. Our team "
                 "has been notified. Please try again in a few minutes.",
             )
         except Exception:
@@ -760,7 +760,7 @@ def _file_telegram_claim(
         logger.exception("photo persistence failed (telegram path)")
 
     try:
-        pdf_path = render_claim_pdf(claim, f"data/pdfs/{claim.claim_id}.pdf")
+        pdf_path = render_claim_pdf(claim, f"/tmp/{claim.claim_id}.pdf")
         claims_repo.save(claim, pdf_path=str(pdf_path))
     except Exception:
         logger.exception("claim persistence failed (telegram path)")
@@ -776,14 +776,20 @@ def _file_telegram_claim(
 
 
 def _email_claim_pdf(*, claim_id: str, to: str, farmer_name: str) -> bool:
-    """Load a claim's PDF from disk and email it. Returns True on a delivered
-    send, False on any failure (missing claim/PDF or transport error)."""
+    """Rebuild the claim PDF from the stored claim and email it. Returns True on
+    a delivered send, False on any failure.
+
+    We regenerate rather than read a saved file: the container app dir isn't
+    writable on FC and /tmp is per-instance, so the only durable source is the
+    claim record itself (DB). Rendering into writable /tmp always works.
+    """
     try:
-        row = claims_repo.get_row(claim_id)
-        if row is None or not row.pdf_path:
-            logger.warning("pdf email: no claim/pdf_path for %s", claim_id)
+        claim = claims_repo.get(claim_id)
+        if claim is None:
+            logger.warning("pdf email: no claim for %s", claim_id)
             return False
-        pdf_bytes = Path(row.pdf_path).read_bytes()
+        pdf_path = render_claim_pdf(claim, f"/tmp/{claim_id}.pdf")
+        pdf_bytes = Path(pdf_path).read_bytes()
         result = notifications.send_claim_pdf_email(
             to=to, claim_id=claim_id, farmer_name=farmer_name or "", pdf_bytes=pdf_bytes
         )
@@ -840,7 +846,7 @@ def process_telegram_callback(
             _send(
                 chat_id,
                 f"Sent to {email} ✅" if ok
-                else "Sorry — I couldn't send that PDF. Please try again later.",
+                else "Sorry, I couldn't send that PDF. Please try again later.",
             )
             return IntakeResult(claim_id=claim_id, status="pdf_emailed" if ok else "pdf_email_failed")
         # No email on file — stash the claim and ask for one.
