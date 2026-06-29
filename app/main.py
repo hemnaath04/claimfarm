@@ -101,39 +101,6 @@ def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/debug/db")
-def debug_db() -> dict:
-    """TEMPORARY diagnostic — reports DB driver + connectivity without leaking
-    secrets. Removed once the Postgres wiring is confirmed."""
-    import os
-
-    url = os.environ.get("DATABASE_URL", "")
-    info: dict = {
-        "database_url_set": bool(url),
-        "scheme": url.split("://", 1)[0] if url else "",
-        "pooler": "-pooler" in url,
-    }
-    try:
-        import psycopg2
-
-        info["psycopg2"] = psycopg2.__version__.split()[0]
-    except Exception as exc:  # noqa: BLE001
-        info["psycopg2"] = f"IMPORT FAIL: {exc}"
-    try:
-        from sqlalchemy import text
-
-        from app.storage.db import get_engine
-
-        with get_engine().connect() as c:
-            c.execute(text("select 1"))
-        info["db"] = "ok"
-    except Exception as exc:  # noqa: BLE001
-        info["db"] = "error"
-        info["error_type"] = type(exc).__name__
-        info["error"] = str(exc)[:280]
-    return info
-
-
 def _verify_twilio_signature(
     request: Request,
     params: dict[str, str],
