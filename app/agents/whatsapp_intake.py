@@ -653,11 +653,11 @@ def _file_telegram_claim(
         for row in existing_rows:
             if row.farmer_phone != farmer_phone_key:
                 continue
-            stored = _photo_store_ref.find_photo(row.claim_id)
+            stored = _photo_store_ref.read_bytes(row.claim_id)
             if stored is None:
                 continue
             try:
-                corpus.append((row.claim_id, average_hash(stored.read_bytes())))
+                corpus.append((row.claim_id, average_hash(stored[0])))
             except Exception:
                 logger.debug("could not hash stored photo for %s", row.claim_id)
         close = find_close_matches(incoming_hash, corpus, threshold=8)

@@ -1,54 +1,52 @@
-"""Local photo persistence for claims.
+"""Claim photo persistence.
 
-FC 3.0 / Singapore has writable /tmp, so for the demo we use a stable
-on-disk path (``data/photos/{claim_id}.{ext}``) and serve it through the
-backend. Production would swap to Alibaba OSS — same interface, swap
-``save_bytes`` to call ``alibaba_oss.upload_bytes`` and return the OSS
-public URL or a signed URL.
+Photos are stored as bytes in the database (the same SQLite locally / Neon
+Postgres in prod that backs claims). FC's container app dir isn't writable for
+the runtime user and /tmp is per-instance, so disk storage lost photos on every
+instance roll — the DB keeps them durable and reachable from any instance.
+Production at higher volume would swap to Alibaba OSS behind this same
+interface (save_bytes / read_bytes / public_url).
 """
 
 from __future__ import annotations
 
 import logging
-import mimetypes
-from pathlib import Path
+
+from sqlmodel import Session
+
+from app.storage.db import PhotoRow, get_engine
 
 logger = logging.getLogger(__name__)
 
-PHOTO_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "photos"
 
-
-def _ext_from_mime(mime: str) -> str:
-    if mime in ("image/jpeg", "image/jpg"):
-        return ".jpg"
-    if mime == "image/png":
-        return ".png"
-    if mime == "image/webp":
-        return ".webp"
-    guessed = mimetypes.guess_extension(mime)
-    return guessed or ".bin"
-
-
-def save_bytes(claim_id: str, data: bytes, mime: str = "image/jpeg") -> Path:
-    """Write the photo to disk; return the resolved path."""
-    PHOTO_DIR.mkdir(parents=True, exist_ok=True)
-    ext = _ext_from_mime(mime)
-    path = PHOTO_DIR / f"{claim_id}{ext}"
+def save_bytes(claim_id: str, data: bytes, mime: str = "image/jpeg") -> str:
+    """Persist (or replace) the photo for a claim; return its public URL."""
     try:
-        path.write_bytes(data)
-    except OSError:
-        logger.exception("photo write failed for %s", claim_id)
-    return path
+        with Session(get_engine()) as s:
+            row = s.get(PhotoRow, claim_id)
+            if row is None:
+                row = PhotoRow(claim_id=claim_id, mime=mime, data=data)
+            else:
+                row.mime = mime
+                row.data = data
+            s.add(row)
+            s.commit()
+    except Exception:
+        logger.exception("photo save failed for %s", claim_id)
+    return public_url(claim_id)
 
 
-def find_photo(claim_id: str) -> Path | None:
-    """Return the path of the photo for this claim_id, regardless of ext."""
-    if not PHOTO_DIR.exists():
+def read_bytes(claim_id: str) -> tuple[bytes, str] | None:
+    """Return (bytes, mime) for a claim's photo, or None if not stored."""
+    try:
+        with Session(get_engine()) as s:
+            row = s.get(PhotoRow, claim_id)
+            if row is None:
+                return None
+            return bytes(row.data), row.mime
+    except Exception:
+        logger.exception("photo read failed for %s", claim_id)
         return None
-    for path in PHOTO_DIR.iterdir():
-        if path.stem == claim_id and path.is_file():
-            return path
-    return None
 
 
 def public_url(claim_id: str) -> str:

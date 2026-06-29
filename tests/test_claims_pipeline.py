@@ -15,7 +15,7 @@ Pipeline stages also tested:
 - claims_repo save/get round-trip
 - mock insurer submit (in-process)
 - multilingual detect_language / status_message
-- photo_store save_bytes / find_photo / public_url
+- photo_store save_bytes / read_bytes / public_url
 """
 
 from __future__ import annotations
@@ -415,8 +415,9 @@ class TestTelegramDedupeIntegration:
             payload="{}",
         )
 
-        mock_stored_path = MagicMock()
-        mock_stored_path.read_bytes.return_value = img
+        # The stored photo for the existing claim is the same image, so the
+        # perceptual hash matches and the dedupe path triggers.
+        stored_photo = (img, "image/png")
 
         # The farmer must be registered for a photo to reach the claim
         # (and therefore the dedupe) path; an unregistered chat is routed
@@ -437,7 +438,7 @@ class TestTelegramDedupeIntegration:
         with (
             patch("app.storage.farmer_repo.get_by_chat_id", return_value=registered),
             patch("app.storage.claims_repo.list_by_status", return_value=[existing_row]),
-            patch("app.storage.photo_store.find_photo", return_value=mock_stored_path),
+            patch("app.storage.photo_store.read_bytes", return_value=stored_photo),
             patch("app.clients.telegram_client.download_file", return_value=(img, "image/png")),
             patch("app.clients.telegram_client.send_message") as mock_send,
             patch("app.agents.damage_assessor.assess_damage") as mock_assess,
@@ -549,19 +550,17 @@ class TestMultilingual:
 
 
 class TestPhotoStore:
-    def test_save_and_find(self):
+    def test_save_and_read(self):
         from app.storage import photo_store
 
         claim_id = f"CLAIMFARM-QA-PHOTO-{int(time.time() * 1000)}"
         img = _png_bytes()
-        try:
-            photo_store.save_bytes(claim_id, img, mime="image/png")
-            found = photo_store.find_photo(claim_id)
-            assert found is not None
-            assert found.stem == claim_id
-        finally:
-            if found and found.exists():
-                found.unlink(missing_ok=True)
+        photo_store.save_bytes(claim_id, img, mime="image/png")
+        got = photo_store.read_bytes(claim_id)
+        assert got is not None
+        data, mime = got
+        assert data == img
+        assert mime == "image/png"
 
     def test_public_url_format(self):
         from app.storage import photo_store

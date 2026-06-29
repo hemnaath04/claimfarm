@@ -380,29 +380,44 @@ export default function AdjusterConsolePage() {
                     value={`${claim.weather.consecutive_dry_days}d`}
                   />
                 </div>
-                <div
-                  className={cn(
-                    "mt-3 rounded-lg border-l-4 py-3 pl-4 pr-3 text-sm",
-                    claim.corroboration.corroborated
-                      ? "border-success bg-success/8"
-                      : "border-destructive bg-destructive/8"
-                  )}
-                >
-                  <div className="mb-1 font-semibold text-foreground">
-                    {claim.corroboration.corroborated
-                      ? "Corroborated"
-                      : "Not corroborated"}{" "}
-                    <span className="font-normal text-muted-foreground">
-                      (strength {claim.corroboration.strength.toFixed(2)})
+                <div className="mt-3 rounded-xl border border-border bg-secondary/30 p-4 text-sm">
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                        claim.corroboration.corroborated
+                          ? "bg-success/15 text-success"
+                          : "bg-harvest/20 text-harvest-deep"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "size-1.5 rounded-full",
+                          claim.corroboration.corroborated
+                            ? "bg-success"
+                            : "bg-harvest-deep"
+                        )}
+                      />
+                      {claim.corroboration.corroborated
+                        ? "Corroborated"
+                        : "Not corroborated"}
+                    </span>
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      strength {claim.corroboration.strength.toFixed(2)}
                     </span>
                   </div>
-                  <div className="text-muted-foreground">
+                  <p className="mt-2 leading-relaxed text-foreground/80">
                     {claim.corroboration.evidence}
-                  </div>
+                  </p>
                   {claim.corroboration.flags?.length ? (
-                    <ul className="mt-2 list-inside list-disc text-destructive">
+                    <ul className="mt-2.5 flex flex-wrap gap-1.5">
                       {claim.corroboration.flags.map((fl) => (
-                        <li key={fl}>{fl}</li>
+                        <li
+                          key={fl}
+                          className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                        >
+                          {fl}
+                        </li>
                       ))}
                     </ul>
                   ) : null}
@@ -502,17 +517,19 @@ export default function AdjusterConsolePage() {
                       {detail.fraud_flags.map((fl, i) => (
                         <div
                           key={i}
-                          className={cn(
-                            "rounded-lg border-l-4 px-3 py-2 text-sm",
-                            fl.severity === "block"
-                              ? "border-destructive bg-destructive/8 text-foreground"
-                              : "border-harvest-deep bg-harvest/15 text-foreground"
-                          )}
+                          className="rounded-xl border border-border bg-secondary/30 p-3 text-sm"
                         >
-                          <div className="text-[10px] font-semibold uppercase tracking-wide">
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                              fl.severity === "block"
+                                ? "bg-destructive/15 text-destructive"
+                                : "bg-harvest/20 text-harvest-deep"
+                            )}
+                          >
                             {fl.severity}
-                          </div>
-                          <div className="mt-0.5">{fl.message}</div>
+                          </span>
+                          <div className="mt-1.5 text-foreground/80">{fl.message}</div>
                         </div>
                       ))}
                     </div>
@@ -529,7 +546,7 @@ export default function AdjusterConsolePage() {
                 <Section
                   title={`Localized farmer message preview · ${claim.farmer.language}`}
                 >
-                  <div className="rounded-lg border-l-4 border-primary bg-primary/8 px-4 py-3 text-sm text-foreground">
+                  <div className="rounded-xl border border-border bg-secondary/30 p-4 text-sm leading-relaxed text-foreground/80">
                     {localizedReply}
                   </div>
                 </Section>

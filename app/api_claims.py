@@ -11,9 +11,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from app.agents import fraud_check, past_claim_rag
@@ -166,10 +165,11 @@ def get_claim_photo(claim_id: str):
     claim = claims_repo.get(claim_id)
     if claim is None:
         raise HTTPException(status_code=404, detail="claim not found")
-    path = photo_store.find_photo(claim_id)
-    if path is None:
+    stored = photo_store.read_bytes(claim_id)
+    if stored is None:
         raise HTTPException(status_code=404, detail="no photo on file")
-    return FileResponse(path)
+    data, mime = stored
+    return Response(content=data, media_type=mime)
 
 
 @router.get("/claims/{claim_id}/localized_reply")

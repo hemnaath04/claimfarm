@@ -30,6 +30,17 @@ class ClaimRow(SQLModel, table=True):
     payload: str  # full Claim JSON
 
 
+class PhotoRow(SQLModel, table=True):
+    """Claim photo bytes stored in the DB so they survive FC instance rolls
+    (the container's app dir isn't writable and /tmp is per-instance)."""
+
+    __tablename__ = "claim_photos"
+
+    claim_id: str = Field(primary_key=True)
+    mime: str = Field(default="image/jpeg")
+    data: bytes
+
+
 @lru_cache
 def get_engine():
     s = get_settings()
