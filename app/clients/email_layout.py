@@ -89,11 +89,16 @@ def render_email(
    <!-- header band -->
    <tr><td style="background:{FOREST};padding:22px 32px;">
      <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
-       <td style="vertical-align:middle;padding-right:10px;">
-         <img src="{logo_url()}" width="34" height="34" alt="ClaimFarm"
-              style="display:block;border:0;border-radius:9px;">
+       <!-- CSS-drawn mark: a brand-yellow rounded tile with a check. Drawn in
+            HTML/CSS (no remote image) so it always renders, even when the mail
+            client blocks images by default. -->
+       <td width="36" height="36"
+           style="width:36px;height:36px;background:{HARVEST};border-radius:9px;
+                  text-align:center;vertical-align:middle;font-family:Arial,sans-serif;
+                  font-size:21px;font-weight:800;color:{FOREST};line-height:36px;">
+         &#10003;
        </td>
-       <td style="vertical-align:middle;font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;
+       <td style="vertical-align:middle;padding-left:10px;font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;
                   font-size:20px;font-weight:700;letter-spacing:-0.02em;color:{IVORY};">
          claimfarm
        </td>

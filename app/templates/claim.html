@@ -4,117 +4,171 @@
 <meta charset="utf-8">
 <title>ClaimFarm Crop Insurance Claim {{ claim.claim_id }}</title>
 <style>
-  @page { size: A4; margin: 18mm 16mm; }
-  body { font-family: "Helvetica", "Arial", sans-serif; color: #1a1a1a; font-size: 10.5pt; line-height: 1.45; }
-  h1 { margin: 0 0 4pt 0; font-size: 20pt; color: #0a4a3f; }
-  h2 { margin: 18pt 0 6pt 0; font-size: 12pt; color: #0a4a3f; border-bottom: 1pt solid #cfd9d4; padding-bottom: 2pt; }
-  .meta { font-size: 9pt; color: #5a6b65; margin-bottom: 12pt; }
-  table { width: 100%; border-collapse: collapse; margin-top: 4pt; }
-  td { padding: 4pt 6pt; vertical-align: top; }
-  td.k { width: 38%; color: #5a6b65; }
-  td.v { font-weight: 500; }
-  .pill { display: inline-block; padding: 1pt 6pt; border-radius: 999px; font-size: 9pt; font-weight: 600; }
+  @page { size: A4; margin: 16mm 15mm 18mm 15mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Helvetica", "Arial", sans-serif; color: #1a2b22; font-size: 10pt; line-height: 1.5; margin: 0; }
+
+  .head { display: flex; justify-content: space-between; align-items: flex-start;
+          border-bottom: 2pt solid #195b40; padding-bottom: 10pt; }
+  .brand { display: flex; align-items: center; }
+  .brand .wordmark { font-size: 17pt; font-weight: 800; letter-spacing: -0.4pt; color: #0b2f22; margin-left: 8pt; }
+  .brand .tag { font-size: 8pt; color: #5b6b62; margin-left: 8pt; }
+  .docref { text-align: right; font-size: 8.5pt; color: #5b6b62; }
+  .docref .title { font-size: 12pt; font-weight: 700; color: #0b2f22; display: block; margin-bottom: 2pt; }
+  .docref strong { color: #1a2b22; }
+
+  .pill { display: inline-block; padding: 1.5pt 7pt; border-radius: 999px; font-size: 8.5pt; font-weight: 700; }
   .pill.green { background: #d8efe5; color: #0a4a3f; }
   .pill.amber { background: #fbeccb; color: #8a5b00; }
   .pill.red   { background: #f6d4d4; color: #8a1c1c; }
-  .indicator-list { margin: 0; padding-left: 16pt; }
-  .corr-evidence { font-style: italic; color: #2c4641; }
-  .flag { color: #8a1c1c; font-weight: 600; }
-  .footer { margin-top: 22pt; font-size: 9pt; color: #5a6b65; border-top: 1pt solid #cfd9d4; padding-top: 6pt; }
-  .signature { margin-top: 28pt; }
-  .signature .line { display: inline-block; border-bottom: 1pt solid #1a1a1a; width: 200pt; margin-right: 12pt; }
+
+  .banner { margin: 12pt 0; padding: 9pt 12pt; border-radius: 6pt; font-size: 10.5pt; font-weight: 600; }
+  .banner.green { background: #eaf6f0; color: #0a4a3f; border: 0.8pt solid #bfe2d3; }
+  .banner.amber { background: #fdf4e1; color: #7a5200; border: 0.8pt solid #f0d9a8; }
+  .banner.red   { background: #fbe9e9; color: #7a1717; border: 0.8pt solid #efc4c4; }
+
+  h2 { margin: 16pt 0 5pt 0; font-size: 11pt; color: #0b2f22; border-bottom: 0.8pt solid #e2ddcf; padding-bottom: 2pt; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 3.5pt 6pt; vertical-align: top; }
+  td.k { width: 36%; color: #5b6b62; }
+  td.v { font-weight: 500; }
+  ul { margin: 0; padding-left: 15pt; }
+
+  .verify { margin: 12pt 0; border: 1pt solid #f0d9a8; border-radius: 6pt; overflow: hidden; }
+  .verify .vh { background: #fdf4e1; padding: 8pt 12pt; font-weight: 700; color: #7a5200; font-size: 10.5pt; }
+  .verify .vbody { padding: 4pt 12pt 10pt 12pt; }
+  .flag { margin-top: 9pt; }
+  .flag .ft { font-weight: 700; color: #8a1c1c; }
+  .flag .fw { color: #3a4a43; margin: 1pt 0 2pt 0; }
+  .flag .fp { color: #0b2f22; }
+  .flag .fp b { color: #195b40; }
+  .howto { margin-top: 11pt; padding-top: 8pt; border-top: 0.8pt dashed #e2c894; font-size: 9.5pt; }
+  .howto ol { margin: 4pt 0 0 0; padding-left: 16pt; }
+  .howto a { color: #195b40; font-weight: 700; text-decoration: none; }
+
+  .evidence-img { max-width: 220pt; max-height: 150pt; border: 1pt solid #e2ddcf; border-radius: 4pt; }
+  .signature { margin-top: 22pt; }
+  .signature .line { display: inline-block; border-bottom: 1pt solid #1a2b22; width: 190pt; margin-right: 14pt; }
+  .footer { margin-top: 18pt; font-size: 8pt; color: #8a978f; border-top: 0.8pt solid #e2ddcf; padding-top: 6pt; }
 </style>
 </head>
 <body>
 
-<h1>Crop Insurance Claim</h1>
-<div class="meta">
-  Claim ID <strong>{{ claim.claim_id }}</strong> &middot;
-  Filed {{ claim.created_at.strftime("%Y-%m-%d %H:%M UTC") }} &middot;
-  Status
-  {% set s = claim.status.value %}
-  {% if s == "approved" %}<span class="pill green">{{ s }}</span>
-  {% elif s == "rejected" %}<span class="pill red">{{ s }}</span>
-  {% else %}<span class="pill amber">{{ s }}</span>{% endif %}
+<div class="head">
+  <div class="brand">
+    {{ logo_svg|safe }}
+    <span class="wordmark">claimfarm</span>
+  </div>
+  <div class="docref">
+    <span class="title">Crop Insurance Claim</span>
+    Claim reference <strong>{{ claim.claim_id }}</strong><br>
+    Filed {{ claim.created_at.strftime("%d %b %Y, %H:%M UTC") }}<br>
+    Status
+    {% if status_label == "Approved" or status_label == "Paid" %}<span class="pill green">{{ status_label }}</span>
+    {% elif status_label == "Not approved" %}<span class="pill red">{{ status_label }}</span>
+    {% else %}<span class="pill amber">{{ status_label }}</span>{% endif %}
+  </div>
 </div>
 
-<h2>Farmer</h2>
+<div class="banner {{ decision_tone }}">{{ decision }}</div>
+
+{% if needs_verification %}
+<div class="verify">
+  <div class="vh">Verification required before this claim can be approved and paid</div>
+  <div class="vbody">
+    <p style="margin:6pt 0 0 0; color:#3a4a43;">
+      Our automated review raised the points below. Each must be cleared before
+      a licensed adjuster can finalise your claim.
+    </p>
+    {% for fl in red_flags %}
+    <div class="flag">
+      <div class="ft">{{ loop.index }}. {{ fl.title }}</div>
+      <div class="fw">{{ fl.why }}</div>
+      <div class="fp"><b>What to send:</b> {{ fl.proof }}</div>
+    </div>
+    {% endfor %}
+    <div class="howto">
+      <strong>How to complete your claim</strong>
+      <ol>
+        <li>Gather the proof(s) listed above.</li>
+        <li>Email them to <a href="mailto:{{ support_email }}">{{ support_email }}</a>
+            with <strong>{{ claim.claim_id }}</strong> in the subject line.</li>
+        <li>ClaimFarm re-processes your evidence and re-runs the verification.</li>
+        <li>Once the checks pass, your claim is approved and the payout is released.</li>
+      </ol>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<h2>Claimant</h2>
 <table>
   <tr><td class="k">Name</td><td class="v">{{ claim.farmer.name }}</td></tr>
-  <tr><td class="k">Phone</td><td class="v">{{ claim.farmer.phone }}</td></tr>
-  <tr><td class="k">Preferred language</td><td class="v">{{ claim.farmer.language }}</td></tr>
-  <tr><td class="k">Region</td><td class="v">{{ claim.farmer.region or "N/A" }}</td></tr>
-  <tr><td class="k">Coordinates</td><td class="v">{{ "%.5f"|format(claim.farmer.latitude) }}, {{ "%.5f"|format(claim.farmer.longitude) }}</td></tr>
+  <tr><td class="k">Contact</td><td class="v">{{ claim.farmer.phone }}</td></tr>
+  <tr><td class="k">Region</td><td class="v">{{ claim.farmer.region or "Not provided" }}</td></tr>
+  {% if has_gps %}
+  <tr><td class="k">Field location</td><td class="v">{{ "%.5f"|format(claim.farmer.latitude) }}, {{ "%.5f"|format(claim.farmer.longitude) }} (GPS verified)</td></tr>
+  {% else %}
+  <tr><td class="k">Field location</td><td class="v">Not verified (no GPS on photo)</td></tr>
+  {% endif %}
   <tr><td class="k">Farm area</td><td class="v">{{ claim.farmer.farm_area_hectares }} hectares</td></tr>
 </table>
 
-<h2>Incident</h2>
+<h2>Loss details</h2>
 <table>
   <tr><td class="k">Crop</td><td class="v">{{ claim.crop_type }}</td></tr>
-  <tr><td class="k">Date of damage</td><td class="v">{{ claim.date_of_damage.isoformat() }}</td></tr>
-  <tr><td class="k">Farmer narrative</td><td class="v">{{ claim.farmer_narrative or "N/A" }}</td></tr>
-  <tr><td class="k">Estimated loss (USD)</td><td class="v">${{ "%.2f"|format(claim.estimated_loss_usd) }}</td></tr>
+  <tr><td class="k">Cause of loss</td><td class="v">{{ claim.damage.damage_cause.value }}</td></tr>
+  <tr><td class="k">Date of damage</td><td class="v">{{ claim.date_of_damage.strftime("%d %b %Y") }}</td></tr>
+  <tr><td class="k">Damage severity</td><td class="v">{{ claim.damage.severity }} / 100</td></tr>
+  <tr><td class="k">Area affected</td><td class="v">{{ claim.damage.affected_area_pct }}%</td></tr>
+  <tr><td class="k">Estimated loss</td><td class="v">${{ "%.2f"|format(claim.estimated_loss_usd) }}</td></tr>
+  {% if claim.farmer_narrative %}
+  <tr><td class="k">Reported by claimant</td><td class="v">"{{ claim.farmer_narrative }}"</td></tr>
+  {% endif %}
 </table>
 
-<h2>AI damage assessment (Qwen-VL-Max)</h2>
+<h2>Assessment summary</h2>
 <table>
-  <tr><td class="k">Identified crop</td><td class="v">{{ claim.damage.crop_type }}</td></tr>
-  <tr><td class="k">Primary cause</td><td class="v">{{ claim.damage.damage_cause.value }}</td></tr>
-  <tr><td class="k">Severity</td><td class="v">{{ claim.damage.severity }} / 100</td></tr>
-  <tr><td class="k">Affected area</td><td class="v">{{ claim.damage.affected_area_pct }} %</td></tr>
-  <tr><td class="k">Model confidence</td><td class="v">{{ "%.0f"|format(claim.damage.confidence * 100) }} %</td></tr>
-  <tr><td class="k">Visible indicators</td><td class="v">
-    <ul class="indicator-list">
-      {% for ind in claim.damage.visible_indicators %}<li>{{ ind }}</li>{% endfor %}
-    </ul>
+  <tr><td class="k">Findings</td><td class="v">{{ claim.damage.notes }}</td></tr>
+  <tr><td class="k">Observed indicators</td><td class="v">
+    <ul>{% for ind in claim.damage.visible_indicators %}<li>{{ ind }}</li>{% endfor %}</ul>
   </td></tr>
-  <tr><td class="k">Notes</td><td class="v">{{ claim.damage.notes }}</td></tr>
-</table>
-
-<h2>Weather corroboration (Open-Meteo + Qwen-Max)</h2>
-<table>
-  <tr><td class="k">Window</td><td class="v">{{ claim.weather.start_date.isoformat() }} → {{ claim.weather.end_date.isoformat() }}</td></tr>
-  <tr><td class="k">Total precipitation</td><td class="v">{{ claim.weather.total_precip_mm }} mm</td></tr>
-  <tr><td class="k">Max / min temp</td><td class="v">{{ claim.weather.max_temp_c }} °C / {{ claim.weather.min_temp_c }} °C</td></tr>
-  <tr><td class="k">Max wind</td><td class="v">{{ claim.weather.max_wind_kmh }} km/h</td></tr>
-  <tr><td class="k">Days &gt; 35 °C</td><td class="v">{{ claim.weather.days_above_35c }}</td></tr>
-  <tr><td class="k">Heavy-rain days (&gt; 30 mm)</td><td class="v">{{ claim.weather.days_with_heavy_rain }}</td></tr>
-  <tr><td class="k">Frost days (&lt; 0 °C)</td><td class="v">{{ claim.weather.days_with_frost }}</td></tr>
-  <tr><td class="k">Longest dry run</td><td class="v">{{ claim.weather.consecutive_dry_days }} days</td></tr>
-  <tr><td class="k">Corroborated</td><td class="v">
-    {% if claim.corroboration.corroborated %}<span class="pill green">YES</span>
-    {% else %}<span class="pill red">NO</span>{% endif %}
-    &nbsp;at strength {{ "%.2f"|format(claim.corroboration.strength) }}
-  </td></tr>
-  <tr><td class="k">Evidence</td><td class="v corr-evidence">{{ claim.corroboration.evidence }}</td></tr>
-  {% if claim.corroboration.flags %}
-  <tr><td class="k">Flags</td><td class="v">
-    <ul class="indicator-list">
-      {% for f in claim.corroboration.flags %}<li class="flag">{{ f }}</li>{% endfor %}
-    </ul>
+  {% if authenticity_pct is not none %}
+  <tr><td class="k">Photo authenticity</td><td class="v">
+    {{ authenticity_pct }}%
+    {% if authenticity_pct >= 85 %}<span class="pill green">OK</span>
+    {% else %}<span class="pill amber">Needs proof</span>{% endif %}
   </td></tr>
   {% endif %}
 </table>
 
+<h2>Weather check</h2>
+<p style="margin:4pt 0;">
+  For {{ claim.weather.start_date.strftime("%d %b") }} to {{ claim.weather.end_date.strftime("%d %b %Y") }}:
+  {{ claim.weather.total_precip_mm }} mm rain, peak {{ claim.weather.max_temp_c }}&deg;C,
+  {{ claim.weather.days_above_35c }} days above 35&deg;C, longest dry run {{ claim.weather.consecutive_dry_days }} days.
+</p>
+<p style="margin:4pt 0; color:#3a4a43;">
+  {% if claim.corroboration.corroborated %}<span class="pill green">Corroborated</span>{% else %}<span class="pill amber">Not corroborated</span>{% endif %}
+  &nbsp;{{ claim.corroboration.evidence }}
+</p>
+
 {% if claim.photo_urls %}
-<h2>Evidence photos</h2>
-<table><tr>
-  {% for url in claim.photo_urls[:3] %}
-  <td><img src="{{ url }}" style="max-width: 165pt; max-height: 120pt; border: 1pt solid #cfd9d4;"></td>
-  {% endfor %}
-</tr></table>
+<h2>Evidence photo</h2>
+<img class="evidence-img" src="{{ claim.photo_urls[0] }}">
 {% endif %}
 
 <div class="signature">
-  Adjuster signature: <span class="line"></span> Date: <span class="line" style="width: 100pt;"></span>
+  Adjuster signature: <span class="line"></span> Date: <span class="line" style="width: 95pt;"></span>
   {% if claim.adjuster_notes %}
-    <p style="margin-top: 10pt;"><strong>Notes:</strong> {{ claim.adjuster_notes }}</p>
+  <p style="margin-top: 9pt;"><strong>Adjuster notes:</strong> {{ claim.adjuster_notes }}</p>
   {% endif %}
 </div>
 
 <div class="footer">
-  Generated by ClaimFarm. AI assessment is advisory; final approval requires a licensed adjuster.
-  Models: Qwen-VL-Max (vision), Qwen-Max (reasoning). Weather: Open-Meteo Archive API.
+  ClaimFarm, photo-first crop insurance for smallholder farmers. Questions: {{ support_email }}.
+  This claim was first assessed by an automated vision and weather review; final approval and payout
+  require a licensed adjuster.
 </div>
 
 </body>
